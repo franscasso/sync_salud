@@ -15,7 +15,7 @@ def connect_to_supabase():
         # Retrieve connection details from environment variables
         host = os.getenv("http://aws-0-us-east-1.pooler.supabase.com/")
         port = os.getenv("5432")
-        dbname = os.getenv("")
+        dbname = os.getenv("postgres")
         user = os.getenv("postgres.oubnxmdpdosmyrorjiqp")
         password = os.getenv("$EB6Y5rbR#z8_qh")
 
@@ -104,3 +104,5 @@ def add_employee(nombre, dni, telefono, fecha_contratacion, salario):
     params = (nombre, dni, telefono, fecha_contratacion, salario)
     
     return execute_query(query, params=params, is_select=False)
+
+connect_to_supabase()
