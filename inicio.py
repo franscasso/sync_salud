@@ -10,7 +10,7 @@ st.set_page_config(
 )
 
 # --- Main Application ---
-st.title("App") #con esto puedo cambiar el titulo
+st.title("Bienvenido") #con esto puedo cambiar el titulo
 
 
 # Check if the user is already logged in (using session state)
