@@ -1,0 +1,7 @@
+streamlit
+psycopg2-binary
+python-dotenv
+pandas
+ipykernel
+
+#correr pip install -r requirements.txt en la terminal
