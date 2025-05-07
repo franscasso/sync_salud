@@ -43,7 +43,8 @@ if not st.session_state.get("logged_in", False):
             new_pass = st.text_input("Nueva contraseña", type="password")
             confirm_pass = st.text_input("Confirmar contraseña", type="password")
             submitted = st.form_submit_button("Registrarse")
-
+            auth_mode = st.radio("Selecciona una opción:", ["Medico", "Admisiones"])
+            
             if submitted:
                 if new_user and new_pass and confirm_pass:
                     user_db = st.session_state["user_db"]

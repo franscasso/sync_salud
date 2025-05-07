@@ -13,11 +13,11 @@ def connect_to_supabase():
     """
     try:
         # Retrieve connection details from environment variables
-        host = os.getenv("SUPABASE_DB_HOST")
-        port = os.getenv("SUPABASE_DB_PORT")
-        dbname = os.getenv("SUPABASE_DB_NAME")
-        user = os.getenv("SUPABASE_DB_USER")
-        password = os.getenv("SUPABASE_DB_PASSWORD")
+        host = os.getenv("http://aws-0-us-east-1.pooler.supabase.com/")
+        port = os.getenv("5432")
+        dbname = os.getenv("")
+        user = os.getenv("postgres.oubnxmdpdosmyrorjiqp")
+        password = os.getenv("$EB6Y5rbR#z8_qh")
 
         # Check if all required environment variables are set
         if not all([host, port, dbname, user, password]):
