@@ -1,42 +1,65 @@
 import streamlit as st
-# ACORDARSE QUE HAY QUE MODIFICAR EL LOG IN 
 
-
-# --- Page Configuration (Optional but Recommended) ---
+# Configuración de la página
 st.set_page_config(
     page_title="Kiosco App - Login",
     page_icon="🛒",
-    layout="centered" # "wide" or "centered"
+    layout="centered"
 )
 
-# --- Main Application ---
-st.title("Bienvenido") #con esto puedo cambiar el titulo
+# Simulación de una base de datos simple (puedes reemplazar esto con una DB real)
+if "user_db" not in st.session_state:
+    st.session_state["user_db"] = {}  # Estructura: {username: password}
 
+# Título de la app
+st.title("Bienvenido")
 
-# Check if the user is already logged in (using session state)
+# Si no está logueado
 if not st.session_state.get("logged_in", False):
-    # If not logged in, show the login form
-    with st.form("login_form"):
-        username = st.text_input("Username (any value)")
-        password = st.text_input("Password (any value)", type="password")
-        submitted = st.form_submit_button("Login")
+    # Selector para alternar entre login y registro
+    auth_mode = st.radio("Selecciona una opción:", ["Login", "Sign Up"])
 
-        if submitted:
-            # For this demo, any username/password is accepted
-            if username and password:
-                st.session_state["logged_in"] = True
-                st.session_state["username"] = username # Optional: store username
-                st.success("Login successful!")
-            else:
-                st.error("Please enter both username and password.")
+    if auth_mode == "Login":
+        with st.form("login_form"):
+            username = st.text_input("Usuario")
+            password = st.text_input("Contraseña", type="password")
+            submitted = st.form_submit_button("Login")
+
+            if submitted:
+                if username and password:
+                    user_db = st.session_state["user_db"]
+                    if username in user_db and user_db[username] == password:
+                        st.session_state["logged_in"] = True
+                        st.session_state["username"] = username
+                        st.success("¡Inicio de sesión exitoso!")
+                    else:
+                        st.error("Credenciales inválidas.")
+                else:
+                    st.error("Por favor completa ambos campos.")
+    
+    elif auth_mode == "Sign Up":
+        with st.form("signup_form"):
+            new_user = st.text_input("Nuevo usuario")
+            new_pass = st.text_input("Nueva contraseña", type="password")
+            confirm_pass = st.text_input("Confirmar contraseña", type="password")
+            submitted = st.form_submit_button("Registrarse")
+
+            if submitted:
+                if new_user and new_pass and confirm_pass:
+                    user_db = st.session_state["user_db"]
+                    if new_user in user_db:
+                        st.error("Este nombre de usuario ya existe.")
+                    elif new_pass != confirm_pass:
+                        st.error("Las contraseñas no coinciden.")
+                    else:
+                        user_db[new_user] = new_pass
+                        st.success("¡Usuario registrado con éxito! Ahora puedes iniciar sesión.")
+                else:
+                    st.error("Completa todos los campos.")
 else:
-    # If logged in, show a welcome message
-    st.success(f"Welcome back, {st.session_state.get('username', 'User')}!")
-    st.info("Navigate using the sidebar on the left to manage different sections.")
-    #st.balloons() # Fun little animation
+    st.success(f"¡Bienvenido de nuevo, {st.session_state.get('username', 'Usuario')}!")
+    st.info("Usa la barra lateral para navegar por la aplicación.")
 
-    # Optional: Add a logout button
-    if st.button("Logout"):
+    if st.button("Cerrar sesión"):
         del st.session_state["logged_in"]
-        if "username" in st.session_state:
-            del st.session_state["username"]
+        del st.session_state["username"]
