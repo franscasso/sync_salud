@@ -13,11 +13,11 @@ def connect_to_supabase():
     """
     try:
         # Retrieve connection details from environment variables
-        host = os.getenv("http://aws-0-us-east-1.pooler.supabase.com/")
-        port = os.getenv("5432")
-        dbname = os.getenv("sofiaphunterr@gmail.com's Project")
-        user = os.getenv("postgres.oubnxmdpdosmyrorjiqp")
-        password = os.getenv("$EB6Y5rbR#z8_qh")
+        host = os.getenv("SUPABASE_DB_HOST")
+        port = os.getenv("SUPABASE_DB_PORT")
+        dbname = os.getenv("SUPABASE_DB_NAME")
+        user = os.getenv("SUPABASE_DB_USER")
+        password = os.getenv("SUPABASE_DB_PASSWORD")
 
         # Check if all required environment variables are set
         if not all([host, port, dbname, user, password]):
@@ -40,7 +40,7 @@ def connect_to_supabase():
         return None
 
 
-def execute_query(query, conn=None, is_select=True):
+def execute_query(query, params= None, conn=None, is_select=True):
     """
     Executes a SQL query and returns the results as a pandas DataFrame for SELECT queries,
     or executes DML operations (INSERT, UPDATE, DELETE) and returns success status.
@@ -65,7 +65,10 @@ def execute_query(query, conn=None, is_select=True):
         
         # Create cursor and execute query
         cursor = conn.cursor()
-        cursor.execute(query)
+        if params:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
         
         if is_select:
             # Fetch all results for SELECT queries
@@ -95,16 +98,17 @@ def execute_query(query, conn=None, is_select=True):
             conn.rollback()
         return pd.DataFrame() if is_select else False
 
-def add_employee(nombre, dni, telefono, fecha_contratacion, salario):
+def add_user(dni, nombre_usuario, contraseña, rol):
     """
-    Adds a new employee to the Empleado table.
+    Agrega un nuevo usuario a la tabla 'users'.
     """
-
-    query = "INSERT INTO empleado (nombre, dni, telefono, fecha_contratacion, salario) VALUES (%s, %s, %s, %s, %s)"
-    params = (nombre, dni, telefono, fecha_contratacion, salario)
-    
+    query = """
+        INSERT INTO users (id, nombre_usuario, contraseña, rol)
+        VALUES (%s, %s, %s, %s)
+    """
+    params = (dni, nombre_usuario, contraseña, rol)
+    print(f"Ejecutando query: {query} con params: {params}")  # Depuración
     return execute_query(query, params=params, is_select=False)
 
 connect_to_supabase()
 
-load_dotenv()

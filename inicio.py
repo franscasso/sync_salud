@@ -1,9 +1,18 @@
 import streamlit as st
+from supabase import create_client, Client
+import psycopg2
+import os
+from dotenv import load_dotenv
+import pandas as pd
+from functions import execute_query, add_user
+
+load_dotenv()
+
 
 # Configuración de la página
 st.set_page_config(
-    page_title="Kiosco App - Login",
-    page_icon="🛒",
+    page_title="SyncSalud - Login",
+    page_icon="",
     layout="centered"
 )
 
@@ -39,25 +48,33 @@ if not st.session_state.get("logged_in", False):
     
     elif auth_mode == "Sign Up":
         with st.form("signup_form"):
-            new_id= st.text_input("")
+            id_user = st.text_input("Ingrese su DNI")
             new_user = st.text_input("Nuevo usuario")
             new_pass = st.text_input("Nueva contraseña", type="password")
             confirm_pass = st.text_input("Confirmar contraseña", type="password")
+            rol = st.radio("Selecciona una opción:", ["Medico", "Admisiones"])
             submitted = st.form_submit_button("Registrarse")
-            auth_mode = st.radio("Selecciona una opción:", ["Medico", "Admisiones"])
 
             if submitted:
-                if new_user and new_pass and confirm_pass:
-                    user_db = st.session_state["user_db"]
-                    if new_user in user_db:
-                        st.error("Este nombre de usuario ya existe.")
-                    elif new_pass != confirm_pass:
-                        st.error("Las contraseñas no coinciden.")
-                    else:
-                        user_db[new_user] = new_pass
-                        st.success("¡Usuario registrado con éxito! Ahora puedes iniciar sesión.")
-                else:
+                if not all([id_user, new_user, new_pass, confirm_pass]):
                     st.error("Completa todos los campos.")
+                elif new_pass != confirm_pass:
+                    st.error("Las contraseñas no coinciden.")
+                elif len(new_pass)< 8:
+                    st.error("La contraseña debe tener 8 o más caracteres")
+                else:
+                    # Verifica si ya existe el usuario
+                    check_query = "SELECT * FROM users WHERE nombre_usuario = %s OR id = %s"
+                    existing = execute_query(check_query, params=(new_user, id_user), is_select=True)
+                    if not existing.empty:
+                        st.error("Este DNI o nombre de usuario ya existe.")
+                    else:
+                        resultado = add_user(id_user, new_user, new_pass, rol)
+                        if resultado:
+                            st.success("¡Usuario registrado con éxito! Ahora puedes iniciar sesión.")
+                        else:
+                            st.error("Error al registrar el usuario.")
+
 else:
     st.success(f"¡Bienvenido de nuevo, {st.session_state.get('username', 'Usuario')}!")
     st.info("Usa la barra lateral para navegar por la aplicación.")
@@ -65,3 +82,5 @@ else:
     if st.button("Cerrar sesión"):
         del st.session_state["logged_in"]
         del st.session_state["username"]
+
+
