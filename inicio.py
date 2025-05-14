@@ -5,7 +5,8 @@ import os
 from dotenv import load_dotenv
 import pandas as pd
 from functions import execute_query, add_user
-from pages import Estudios, Medicamentos, Administracion, Consultas_médicas
+from pages import Estudios, Medicamentos, Administracion, ConsultasMedicas
+
 
 load_dotenv()
 
@@ -133,14 +134,13 @@ if st.session_state.get("logged_in"):
         st.write("Bienvenido a la página de inicio.")
 
     elif selected_page == "Estudios" and st.session_state.rol == "Medico":
-        st.write("Página de Estudios (solo para Médicos)")
+        Estudios()
 
     elif selected_page == "Medicamentos" and st.session_state.rol == "Medico":
-        st.write("Página de Medicamentos (solo para Médicos)")
-
+        Medicamentos()
 
     elif selected_page == "Administración" and st.session_state.rol == "Admisiones":
-        st.write("Página de Administración (solo para Admisiones)")
+        Administracion()
 
 else:
     st.warning("Por favor inicia sesión para acceder al contenido.")

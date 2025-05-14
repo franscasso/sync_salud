@@ -1,5 +1,12 @@
 import streamlit as st
 
+# pages/Estudios.py
+
+def show():
+    st.title("Página de Estudios")
+    st.write("Aquí va el contenido completo que quieras mostrar.")
+    # Podés seguir usando componentes de Streamlit acá normalmente
+
 st.title("Estudios")
 
 dni_pac= st.text_input("Ingresar dni de paciente: ")

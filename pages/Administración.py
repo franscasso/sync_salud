@@ -2,6 +2,11 @@ import streamlit as st
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+def show():
+    st.title("Página de Administracion")
+    st.write("Aquí va el contenido completo que quieras mostrar.")
+    # Podés seguir usando componentes de Streamlit acá normalmente
+
 # Función para conectarse a la base de datos
 def get_connection():
     return psycopg2.connect(
