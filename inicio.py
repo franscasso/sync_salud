@@ -35,16 +35,18 @@ if not st.session_state.get("logged_in", False):
             submitted = st.form_submit_button("Login")
 
             if submitted:
-                if username and password:
-                    user_db = st.session_state["user_db"]
-                    if username in user_db and user_db[username] == password:
-                        st.session_state["logged_in"] = True
-                        st.session_state["username"] = username
+                if len(password) < 8 or " " in password:
+                    st.error("La contraseña debe tener 8 o más caracteres y no deben poseer espacios")
+                elif password and username:
+                    check_query = "SELECT * FROM users WHERE nombre_usuario = %s AND contraseña = %s"
+                    existing = execute_query(check_query, params=(username, password), is_select=True)
+                    if not existing.empty:
                         st.success("¡Inicio de sesión exitoso!")
                     else:
-                        st.error("Credenciales inválidas.")
+                        st.error("Usuario o contraseña son incorrectas")
                 else:
                     st.error("Por favor completa ambos campos.")
+                    
     
     elif auth_mode == "Sign Up":
         with st.form("signup_form"):
@@ -63,7 +65,7 @@ if not st.session_state.get("logged_in", False):
                 elif new_pass != confirm_pass:
                     st.error("Las contraseñas no coinciden.")
                 elif len(new_pass)< 8 or " " in new_pass:
-                    st.error("La contraseña debe tener 8 o más caracteres")
+                    st.error("La contraseña debe tener 8 o más caracteres y no deben poseer espacios")
                 else:
                     # Verifica si ya existe el usuario
                     check_query = "SELECT * FROM users WHERE nombre_usuario = %s OR id = %s"
