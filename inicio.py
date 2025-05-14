@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 import pandas as pd
 from functions import execute_query, add_user
+from pages import Estudios, Medicamentos, Administracion, Consultas_médicas
 
 load_dotenv()
 
@@ -23,12 +24,31 @@ if "user_db" not in st.session_state:
 # Título de la app
 st.title("Bienvenido")
 
-# Si no está logueado
-if not st.session_state.get("logged_in", False):
-    # Selector para alternar entre login y registro
-    auth_mode = st.radio("Selecciona una opción:", ["Login", "Sign Up"])
 
-    if auth_mode == "Login":
+# Inicializa estado de sesión
+# Inicializa estado de sesión
+if "auth_mode" not in st.session_state:
+    st.session_state.auth_mode = "Login"
+
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+# 👉 Solo mostrar login/sign-up si el usuario NO está logueado
+if not st.session_state.logged_in:
+
+    # 🔄 Botón superior para cambiar entre Login y Sign Up, con cambio inmediato
+    if st.session_state.auth_mode == "Login":
+        if st.button("¿No tienes cuenta? Regístrate aquí"):
+            st.session_state.auth_mode = "Sign Up"
+            st.rerun()
+    else:
+        if st.button("¿Ya tienes cuenta? Inicia sesión aquí"):
+            st.session_state.auth_mode = "Login"
+            st.rerun()
+
+    # 🧾 Formulario de LOGIN
+    if st.session_state.auth_mode == "Login":
+        st.subheader("Iniciar sesión")
         with st.form("login_form"):
             username = st.text_input("Usuario")
             password = st.text_input("Contraseña", type="password")
@@ -36,19 +56,24 @@ if not st.session_state.get("logged_in", False):
 
             if submitted:
                 if len(password) < 8 or " " in password:
-                    st.error("La contraseña debe tener 8 o más caracteres y no deben poseer espacios")
-                elif password and username:
+                    st.error("La contraseña debe tener 8 o más caracteres y no debe contener espacios")
+                elif username and password:
                     check_query = "SELECT * FROM users WHERE nombre_usuario = %s AND contraseña = %s"
                     existing = execute_query(check_query, params=(username, password), is_select=True)
                     if not existing.empty:
+                        st.session_state.logged_in = True
+                        st.session_state.username = username
+                        st.session_state.rol = existing["rol"][0]
                         st.success("¡Inicio de sesión exitoso!")
+                        st.rerun()
                     else:
-                        st.error("Usuario o contraseña son incorrectas")
+                        st.error("Usuario o contraseña incorrectos")
                 else:
                     st.error("Por favor completa ambos campos.")
-                    
-    
-    elif auth_mode == "Sign Up":
+
+    # 🧾 Formulario de SIGN UP
+    elif st.session_state.auth_mode == "Sign Up":
+        st.subheader("Crear una cuenta")
         with st.form("signup_form"):
             id_user = st.text_input("Ingrese su DNI")
             new_user = st.text_input("Nuevo usuario")
@@ -61,13 +86,12 @@ if not st.session_state.get("logged_in", False):
                 if not all([id_user, new_user, new_pass, confirm_pass]):
                     st.error("Completa todos los campos.")
                 elif " " in new_user:
-                    st.error("Nombre de usuario no puede contener espacios")
+                    st.error("El nombre de usuario no puede contener espacios")
                 elif new_pass != confirm_pass:
                     st.error("Las contraseñas no coinciden.")
-                elif len(new_pass)< 8 or " " in new_pass:
-                    st.error("La contraseña debe tener 8 o más caracteres y no deben poseer espacios")
+                elif len(new_pass) < 8 or " " in new_pass:
+                    st.error("La contraseña debe tener 8 o más caracteres y no debe contener espacios")
                 else:
-                    # Verifica si ya existe el usuario
                     check_query = "SELECT * FROM users WHERE nombre_usuario = %s OR id = %s"
                     existing = execute_query(check_query, params=(new_user, id_user), is_select=True)
                     if not existing.empty:
@@ -76,15 +100,53 @@ if not st.session_state.get("logged_in", False):
                         resultado = add_user(id_user, new_user, new_pass, rol)
                         if resultado:
                             st.success("¡Usuario registrado con éxito! Ahora puedes iniciar sesión.")
+                            st.session_state.auth_mode = "Login"
+                            st.rerun()
                         else:
                             st.error("Error al registrar el usuario.")
 
-else:
-    st.success(f"¡Bienvenido de nuevo, {st.session_state.get('username', 'Usuario')}!")
-    st.info("Usa la barra lateral para navegar por la aplicación.")
 
-    if st.button("Cerrar sesión"):
-        del st.session_state["logged_in"]
-        del st.session_state["username"]
+
+if st.session_state.get("logged_in"):
+    if st.sidebar.button("Cerrar sesión"):
+        st.session_state.clear()
+        st.rerun()
+
+
+
+# Solo ejecuta este bloque si el usuario está autenticado
+if st.session_state.get("logged_in"):
+    st.sidebar.write(f"Usuario: {st.session_state.username}")
+    st.sidebar.write(f"Rol: {st.session_state.rol}")
+
+    # Define las páginas que puede ver según su rol
+    pages = ["Inicio"]  # Todos pueden ver "Inicio"
+    if st.session_state.rol == "Medico":
+        pages.extend(["Estudios", "Medicamentos"])
+    elif st.session_state.rol == "Admisiones":
+        pages.extend(["Administración"])
+
+    selected_page = st.sidebar.radio("Selecciona una página", pages)
+
+    # Mostrar contenido según selección
+    if selected_page == "Inicio":
+        st.write("Bienvenido a la página de inicio.")
+
+    elif selected_page == "Estudios" and st.session_state.rol == "Medico":
+        st.write("Página de Estudios (solo para Médicos)")
+
+    elif selected_page == "Medicamentos" and st.session_state.rol == "Medico":
+        st.write("Página de Medicamentos (solo para Médicos)")
+
+
+    elif selected_page == "Administración" and st.session_state.rol == "Admisiones":
+        st.write("Página de Administración (solo para Admisiones)")
+
+else:
+    st.warning("Por favor inicia sesión para acceder al contenido.")
+
+
+
+
 
 
