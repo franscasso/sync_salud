@@ -58,9 +58,11 @@ if not st.session_state.get("logged_in", False):
             if submitted:
                 if not all([id_user, new_user, new_pass, confirm_pass]):
                     st.error("Completa todos los campos.")
+                elif " " in new_user:
+                    st.error("Nombre de usuario no puede contener espacios")
                 elif new_pass != confirm_pass:
                     st.error("Las contraseñas no coinciden.")
-                elif len(new_pass)< 8 or "" in new_pass:
+                elif len(new_pass)< 8 or " " in new_pass:
                     st.error("La contraseña debe tener 8 o más caracteres")
                 else:
                     # Verifica si ya existe el usuario
