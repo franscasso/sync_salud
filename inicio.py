@@ -5,7 +5,6 @@ import os
 from dotenv import load_dotenv
 import pandas as pd
 from functions import execute_query, add_user
-from pages import Estudios, Medicamentos, Administracion, ConsultasMedicas
 
 
 load_dotenv()
@@ -119,29 +118,6 @@ if st.session_state.get("logged_in"):
 if st.session_state.get("logged_in"):
     st.sidebar.write(f"Usuario: {st.session_state.username}")
     st.sidebar.write(f"Rol: {st.session_state.rol}")
-
-    # Define las páginas que puede ver según su rol
-    pages = ["Inicio"]  # Todos pueden ver "Inicio"
-    if st.session_state.rol == "Medico":
-        pages.extend(["Estudios", "Medicamentos"])
-    elif st.session_state.rol == "Admisiones":
-        pages.extend(["Administración"])
-
-    selected_page = st.sidebar.radio("Selecciona una página", pages)
-
-    # Mostrar contenido según selección
-    if selected_page == "Inicio":
-        st.write("Bienvenido a la página de inicio.")
-
-    elif selected_page == "Estudios" and st.session_state.rol == "Medico":
-        Estudios()
-
-    elif selected_page == "Medicamentos" and st.session_state.rol == "Medico":
-        Medicamentos()
-
-    elif selected_page == "Administración" and st.session_state.rol == "Admisiones":
-        Administracion()
-
 else:
     st.warning("Por favor inicia sesión para acceder al contenido.")
 
