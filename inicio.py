@@ -56,6 +56,15 @@ st.markdown("""
         margin: 1rem 0;
         border-left: 4px solid #1a73e8;
     }
+    .info-card ul {
+        list-style-type: disc;
+        padding-left: 20px;
+        margin-top: 10px;
+    }
+    .info-card li {
+        margin-bottom: 5px;
+        padding-left: 5px;
+    }
     .contact-card {
         background-color: #fff3e0;
         padding: 1.5rem;
@@ -97,6 +106,50 @@ def execute_query(query, params=None, is_select=False):
 def add_user(id_user, username, password, rol):
     # Simular registro de usuario - reemplazar con tu lógica real
     return True
+def manage_page_access():
+    # Definir permisos por rol
+    role_permissions = {
+        "Medico": ["Consultas_médicas.py", "Estudios.py", "Medicamentos.py"],
+        "Admisiones": ["Administración.py"]
+    }
+    
+    # Lista de todas las páginas
+    all_pages = ["Administración.py", "Consultas_médicas.py", "Estudios.py", "Medicamentos.py"]
+    
+    # Crear archivo .streamlit/config.toml si no existe
+    os.makedirs(".streamlit", exist_ok=True)
+    
+    if not st.session_state.get("logged_in", False):
+        # Si no está logueado, bloquear todas las páginas
+        with open(".streamlit/config.toml", "w") as f:
+            for page in all_pages:
+                page_name = page.replace(".py", "").replace("_", " ")
+                f.write(f'[browser.gatherUsageStats]\n')
+                f.write(f'enabled = false\n\n')
+                f.write(f'[pages]\n')
+                for p in all_pages:
+                    f.write(f'[pages.{p.replace(".py", "").replace("_", "")}]\n')
+                    f.write(f'disabled = true\n\n')
+    else:
+        # Si está logueado, permitir solo las páginas según el rol
+        rol = st.session_state.get("rol", "")
+        allowed_pages = role_permissions.get(rol, [])
+        
+        with open(".streamlit/config.toml", "w") as f:
+            f.write(f'[browser.gatherUsageStats]\n')
+            f.write(f'enabled = false\n\n')
+            f.write(f'[pages]\n')
+            for page in all_pages:
+                page_key = page.replace(".py", "").replace("_", "")
+                if page in allowed_pages:
+                    f.write(f'[pages.{page_key}]\n')
+                    f.write(f'disabled = false\n\n')
+                else:
+                    f.write(f'[pages.{page_key}]\n')
+                    f.write(f'disabled = true\n\n')
+    
+    # Notificar a Streamlit que debe recargar la configuración
+    st.rerun()
 
 # Inicializa estado de sesión
 if "auth_mode" not in st.session_state:
@@ -175,6 +228,7 @@ if not st.session_state.logged_in:
                     st.rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)
+    st.warning("🔒 Todas las páginas están bloqueadas hasta que inicies sesión.")
 
 # Página Principal (Usuario logueado)
 if st.session_state.get("logged_in"):
@@ -185,10 +239,24 @@ if st.session_state.get("logged_in"):
         st.markdown(f"**👤 Usuario:** {st.session_state.username}")
         st.markdown(f"**👥 Rol:** {st.session_state.rol}")
         st.markdown("---")
+        
+        # Mostrar información sobre páginas accesibles
+        if st.session_state.rol == "Medico":
+            st.success("✅ Tienes acceso a: Consultas médicas, Estudios y Medicamentos")
+            st.error("❌ No tienes acceso a: Administración")
+        elif st.session_state.rol == "Admisiones":
+            st.success("✅ Tienes acceso a: Administración")
+            st.error("❌ No tienes acceso a: Consultas médicas, Estudios y Medicamentos")
+        
+        st.markdown("---")
         if st.button("🚪 Cerrar sesión"):
+            # Restablecer estado y bloquear páginas
             st.session_state.clear()
+            try:
+                manage_page_access()
+            except:
+                pass
             st.rerun()
-    
     # Mensaje de bienvenida personalizado
     st.markdown(f'<div class="welcome-text">¡Bienvenido a SyncSalud, {st.session_state.username}! 👋</div>', unsafe_allow_html=True)
     
@@ -196,15 +264,13 @@ if st.session_state.get("logged_in"):
     st.markdown("""
     <div class="info-card">
         <h3>🏥 Sobre SyncSalud</h3>
-        <p>SyncSalud es una plataforma innovadora diseñada para revolucionar la gestión clínica y hospitalaria. 
-        Nuestra misión es mejorar la eficiencia en las consultas médicas, reducir los tiempos de espera y 
-        optimizar la experiencia tanto para profesionales de la salud como para pacientes.</p>
-        
+        <p>SyncSalud es una plataforma innovadora diseñada para transformar la gestión clínica y hospitalaria. 
+        Nuestra misión es optimizar la eficiencia de las consultas médicas, reducir los tiempos de espera y 
+        digitalizar la historia clínica de los pacientes, garantizando su preservación en el tiempo y su acceso ágil y seguro.</p>
         <h4>✨ Beneficios clave:</h4>
         <ul>
             <li>Gestión digital de historias clínicas</li>
-            <li>Programación inteligente de turnos</li>
-            <li>Comunicación fluida entre departamentos</li>
+            <li>Prescripción electrónica de medicamentos</li>
             <li>Acceso rápido a información crítica del paciente</li>
             <li>Reducción del 40% en tiempos administrativos</li>
         </ul>
@@ -228,10 +294,9 @@ if st.session_state.get("logged_in"):
     
     # Datos para el gráfico
     data = {
-        'Métrica': ['Tiempo de consulta', 'Satisfacción del paciente', 'Precisión diagnóstica', 
-                    'Gestión de turnos', 'Comunicación interdepartamental'],
-        'Antes de SyncSalud': [45, 65, 80, 60, 55],
-        'Con SyncSalud': [30, 92, 95, 88, 90]
+        'Métrica': ['Tiempo de consulta', 'Satisfacción del paciente', 'Precisión diagnóstica'],
+        'Antes de SyncSalud': [45, 65, 80],
+        'Con SyncSalud': [30, 92, 95]
     }
     
     df = pd.DataFrame(data)
@@ -271,7 +336,7 @@ if st.session_state.get("logged_in"):
     
     with col1:
         st.metric(
-            label="⏱️ Reducción tiempo consulta",
+            label="⏱️ Aceleración de trabajo",
             value="33%",
             delta="15 min menos",
             delta_color="normal"

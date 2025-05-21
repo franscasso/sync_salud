@@ -68,6 +68,7 @@ st.title("Administración: ¿Qué desea agregar?")
 # Opción para elegir entre paciente o médico
 opcion = st.radio("Seleccione qué desea agregar", ("Paciente", "Médico"))
 
+opciones_sangre = ["", "A+","A-", "B+","B-","AB+", "AB-","O+", "O-"]
 
 # Formulario para agregar un paciente
 if opcion == "Paciente":
@@ -79,7 +80,7 @@ if opcion == "Paciente":
         sexo = st.selectbox("Sexo", ["M", "F", "Otro"])
         telefono = st.text_input("Teléfono")
         contacto_emergencia = st.text_input("Contacto de Emergencia")
-        grupo_sanguineo = st.text_input("Grupo Sanguíneo")
+        grupo_sanguineo = st.selectbox("Grupo Sanguíneo", opciones_sangre)
         
         submitted = st.form_submit_button("Agregar Paciente")
         if submitted:
