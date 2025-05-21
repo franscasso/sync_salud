@@ -1,0 +1,64 @@
+[browser.gatherUsageStats]
+enabled = false
+
+[pages]
+[pages.Administración]
+disabled = true
+
+[pages.Consultasmédicas]
+disabled = true
+
+[pages.Estudios]
+disabled = true
+
+[pages.Medicamentos]
+disabled = true
+
+[browser.gatherUsageStats]
+enabled = false
+
+[pages]
+[pages.Administración]
+disabled = true
+
+[pages.Consultasmédicas]
+disabled = true
+
+[pages.Estudios]
+disabled = true
+
+[pages.Medicamentos]
+disabled = true
+
+[browser.gatherUsageStats]
+enabled = false
+
+[pages]
+[pages.Administración]
+disabled = true
+
+[pages.Consultasmédicas]
+disabled = true
+
+[pages.Estudios]
+disabled = true
+
+[pages.Medicamentos]
+disabled = true
+
+[browser.gatherUsageStats]
+enabled = false
+
+[pages]
+[pages.Administración]
+disabled = true
+
+[pages.Consultasmédicas]
+disabled = true
+
+[pages.Estudios]
+disabled = true
+
+[pages.Medicamentos]
+disabled = true
+

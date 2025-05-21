@@ -1,5 +1,8 @@
 import streamlit as st
-def show():
-    st.title("Página de Consultas médicas")
-    st.write("Aquí va el contenido completo que quieras mostrar.")
-    # Podés seguir usando componentes de Streamlit acá normalmente
+import pandas as pd
+import plotly.express as px
+import time
+import sys
+import os
+
+# Añadir la ruta del directorio .streamlit al sistema para poder importar módulos

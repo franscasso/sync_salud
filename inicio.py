@@ -97,15 +97,6 @@ def crear_logo():
     """
 
 # Simulación de funciones de base de datos
-def execute_query(query, params=None, is_select=False):
-    # Simular consulta a BD - reemplazar con tu lógica real
-    if is_select:
-        return pd.DataFrame()
-    return True
-
-def add_user(id_user, username, password, rol):
-    # Simular registro de usuario - reemplazar con tu lógica real
-    return True
 def manage_page_access():
     # Definir permisos por rol
     role_permissions = {
