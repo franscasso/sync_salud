@@ -29,38 +29,39 @@ def insertar_paciente(dni, nombre_completo, obra_social, fecha_nacimiento,
 
 
 # Función para insertar un médico
-def insertar_medico(nombre_apellido, especialidad, numero_licencia, email_profesional, telefono):
+def insertar_medico(nombre, licencia, id_hospital, id_categoria):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO MEDICO (nombre_apellido, especialidad, numero_licencia, email_profesional, telefono)
-        VALUES (%s, %s, %s, %s, %s) RETURNING id_medico
-    """, (nombre_apellido, especialidad, numero_licencia, email_profesional, telefono))
+        INSERT INTO MEDICOS(nombre, licencia, id_hospital, id_categoria)
+        VALUES (%s, %s, %s, %s) RETURNING id_medico
+    """, (nombre,licencia, id_hospital, id_categoria))
     id_medico = cur.fetchone()[0]
     conn.commit()
     cur.close()
     conn.close()
     return id_medico
 
+
 # Función para obtener las categorías
 def obtener_categorias():
     conn = get_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT id, nombre_categoria FROM Categorias")
+    cur.execute("SELECT id_tipo_categoria, nombre_categoria FROM Categorias")
     categorias = cur.fetchall()
     cur.close()
     conn.close()
-    return [(c['id'], c['nombre_categoria']) for c in categorias]
+    return [(c["id_tipo_categoria"], c['nombre_categoria']) for c in categorias]
 
 # Función para obtener los hospitales
 def obtener_hospitales():
     conn = get_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT id, nombre_hospital FROM Hospital")
+    cur.execute("SELECT id_hospital,nombre_hospital FROM Hospital")
     hospitales = cur.fetchall()
     cur.close()
     conn.close()
-    return [(h['id'], h['nombre_hospital']) for h in hospitales]
+    return [(h["id_hospital"], h['nombre_hospital']) for h in hospitales]
 
 # Página de administración
 st.title("Administración: ¿Qué desea agregar?")
@@ -92,62 +93,27 @@ if opcion == "Paciente":
 elif opcion == "Médico":
     with st.form("Agregar Médico"):
         nombre_apellido = st.text_input("Nombre y Apellido")
-        especialidad = st.text_input("Especialidad")
         numero_licencia = st.text_input("Número de Licencia")
-        email_profesional = st.text_input("Email Profesional")
-        telefono = st.text_input("Teléfono")
 
         categorias = obtener_categorias()
-        opciones_categoria = [f"{id} - {nombre}" for id, nombre in categorias]
+        opciones_categoria=[ nombre for _, nombre in categorias]
 
-        categoria_seleccionada = st.selectbox("Selecciona la Categoría del Médico", opciones_categoria) if categorias else None
+        categoria_seleccionada = st.selectbox("Selecciona la Categoría del Médico", opciones_categoria)
+        id_categoria= next((id for id, nombre in categorias if nombre ==categoria_seleccionada), None)
 
-        if categoria_seleccionada:
-            id_categoria = int(categoria_seleccionada.split(" - ")[0])
+        hospitales = obtener_hospitales()
+        opciones_hospital =[nombre for _, nombre in hospitales]
 
-            nombre_usuario = st.text_input("Nombre de Usuario para el Médico")
-            contraseña = st.text_input("Contraseña para el Médico", type="password")
-            rol = 'medico'
+        hospital_seleccionado= st.selectbox("Hospital donde atiende", opciones_hospital)
+        id_hospital = next((id for id, nombre in hospitales if nombre == hospital_seleccionado), None)
 
-            submitted = st.form_submit_button("Agregar Médico")
-            if submitted:
-                # Crear usuario
-                conn = get_connection()
-                cur = conn.cursor()
-                cur.execute("""
-                    INSERT INTO Users (Nombre_usuario, Contraseña, Rol)
-                    VALUES (%s, %s, %s) RETURNING ID
-                """, (nombre_usuario, contraseña, rol))
-                id_usuario = cur.fetchone()[0]
-                conn.commit()
-                cur.close()
-                conn.close()
 
-                # Insertar médico
-                id_medico = insertar_medico(nombre_apellido, especialidad, numero_licencia, email_profesional, telefono)
+        submitted = st.form_submit_button("Agregar Médico")
+        if submitted:
+            insertar_medico(nombre_apellido, numero_licencia,id_hospital, id_categoria)
+            st.success("Médico agregado correctamente")
 
-                hospitales = obtener_hospitales()
-                opciones_hospital = [f"{id} - {nombre}" for id, nombre in hospitales]
-                seleccionados_hospitales = st.multiselect("Hospitales donde atiende", opciones_hospital)
 
-                dias = st.text_input("Días de Atención (Ej: Lun, Mie, Vie)")
-                horarios = st.text_input("Horarios (Ej: 9:00-12:00)")
 
-                if seleccionados_hospitales:
-                    for sel in seleccionados_hospitales:
-                        id_hospital = int(sel.split(" - ")[0])
-                        conn = get_connection()
-                        cur = conn.cursor()
-                        cur.execute("""
-                            INSERT INTO Medico_Hospital (id_medico, id_hospital)
-                            VALUES (%s, %s)
-                        """, (id_medico, id_hospital))
-                        conn.commit()
-                        cur.close()
-                        conn.close()
 
-                    st.success("Médico agregado correctamente.")
-                else:
-                    st.error("Por favor, selecciona al menos un hospital.")
-        else:
-            st.error("Por favor, selecciona una categoría para el médico.")
+        

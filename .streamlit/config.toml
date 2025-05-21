@@ -2,26 +2,10 @@
 enabled = false
 
 [pages]
-[pages.Administraci髇]
+[pages.Administraci贸n]
 disabled = true
 
-[pages.Consultasm閐icas]
-disabled = true
-
-[pages.Estudios]
-disabled = true
-
-[pages.Medicamentos]
-disabled = true
-
-[browser.gatherUsageStats]
-enabled = false
-
-[pages]
-[pages.Administraci髇]
-disabled = true
-
-[pages.Consultasm閐icas]
+[pages.Consultasm茅dicas]
 disabled = true
 
 [pages.Estudios]
@@ -34,10 +18,10 @@ disabled = true
 enabled = false
 
 [pages]
-[pages.Administraci髇]
+[pages.Administraci贸n]
 disabled = true
 
-[pages.Consultasm閐icas]
+[pages.Consultasm茅dicas]
 disabled = true
 
 [pages.Estudios]
@@ -50,10 +34,26 @@ disabled = true
 enabled = false
 
 [pages]
-[pages.Administraci髇]
+[pages.Administraci贸n]
 disabled = true
 
-[pages.Consultasm閐icas]
+[pages.Consultasm茅dicas]
+disabled = true
+
+[pages.Estudios]
+disabled = true
+
+[pages.Medicamentos]
+disabled = true
+
+[browser.gatherUsageStats]
+enabled = false
+
+[pages]
+[pages.Administraci贸n]
+disabled = true
+
+[pages.Consultasm茅dicas]
 disabled = true
 
 [pages.Estudios]
