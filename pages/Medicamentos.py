@@ -5,8 +5,10 @@ import time
 import sys
 import os
 
-
-if st.session_state.rol != "Medico":
-    st.error("No tienes acceso a esta página")
+#Este codigo del principio hace que la pagina se bloquee si no sos Medico
+if st.session_state.logged_in == False:
+    st.error("Debes iniciar sesion para acceder a esta página")
 else:
-    st.title("Consultas médicas")
+    if st.session_state.rol != "Medico":
+        st.error("No tienes acceso a esta página")
+    else: #Todo tiene que estar adentro de este else

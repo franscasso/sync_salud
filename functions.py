@@ -120,3 +120,110 @@ def get_connection():
         password="$EB6Y5rbR#z8_qh",
         port="5432"
     )
+
+
+def autenticar_usuario(nombre_usuario, contraseña):
+    """
+    Verifica si el usuario existe y si la contraseña es correcta.
+
+    Args:
+        nombre_usuario (str): El nombre de usuario ingresado.
+        contraseña (str): La contraseña ingresada.
+
+    Returns:
+        dict: {'success': bool, 'message': str}
+    """
+    query = "SELECT contraseña FROM users WHERE nombre_usuario = %s"
+    params = (nombre_usuario,)
+    resultado = execute_query(query, params=params, is_select=True)
+
+    if resultado.empty:
+        return {'success': False, 'message': 'El usuario no existe.'}
+    
+    contraseña_en_bd = resultado.iloc[0]['contraseña']
+    
+    if contraseña == contraseña_en_bd:
+        return {'success': True, 'message': f'Bienvenido, {nombre_usuario}!'}
+    else:
+        return {'success': False, 'message': 'Contraseña incorrecta.'}
+
+def buscar_rol(nombre_usuario, contraseña):
+    """
+    Devuelve el rol de un usuario si las credenciales son correctas.
+
+    Args:
+        nombre_usuario (str): Nombre de usuario ingresado.
+        contraseña (str): Contraseña ingresada.
+
+    Returns:
+        dict: {'success': bool, 'rol': str or None, 'message': str}
+    """
+    query = "SELECT contraseña, rol FROM users WHERE nombre_usuario = %s"
+    params = (nombre_usuario,)  
+    resultado = execute_query(query, params=params, is_select=True)
+
+    if resultado.empty:
+        return {'success': False, 'rol': None, 'message': 'El usuario no existe.'}
+
+    contraseña_en_bd = resultado.iloc[0]['contraseña']
+    rol_en_bd = resultado.iloc[0]['rol']
+
+    if contraseña == contraseña_en_bd:
+        return {'success': True, 'rol': rol_en_bd, 'message': f"{rol_en_bd}"}
+    
+    
+
+def verificar_medico_por_dni(dni):
+    """
+    Verifica si un médico existe por su DNI y devuelve el hospital al que pertenece.
+
+    Args:
+        dni (str or int): DNI del médico.
+
+    Returns:
+        dict: {'success': bool, 'id_hospital': int or None, 'message': str}
+    """
+    query = "SELECT id_hospital FROM medicos WHERE dni = %s"
+    params = (dni,)
+    resultado = execute_query(query, params=params, is_select=True)
+
+    if resultado.empty:
+        return {
+            'success': False,
+            'id_hospital': None,
+            'message': 'No se encontró ningún médico con ese DNI.'
+        }
+
+    id_hospital = resultado.iloc[0]['id_hospital']
+    return {
+        'success': True,
+        'id_hospital': id_hospital,
+    }
+
+def obtener_dni_por_usuario(nombre_usuario):
+    """
+    Devuelve el DNI (columna 'id') de un usuario a partir de su nombre de usuario.
+
+    Args:
+        nombre_usuario (str): Nombre de usuario registrado en la tabla 'users'.
+
+    Returns:
+        dict: {'success': bool, 'dni': str or None, 'message': str}
+    """
+    query = "SELECT id FROM users WHERE nombre_usuario = %s"
+    params = (nombre_usuario,)
+    resultado = execute_query(query, params=params, is_select=True)
+
+    if resultado.empty:
+        return {
+            'success': False,
+            'dni': None,
+            'message': 'No se encontró ningún usuario con ese nombre.'
+        }
+
+    dni = resultado.iloc[0]['id']
+    return {
+        'success': True,
+        'dni': f"{dni}",
+        'message': f"El DNI del usuario '{nombre_usuario}' es {dni}."
+    }

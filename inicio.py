@@ -4,7 +4,8 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 import pandas as pd
-from functions import execute_query, add_user
+from functions import execute_query, add_user, autenticar_usuario, buscar_rol, verificar_medico_por_dni, obtener_dni_por_usuario
+from functions import get_connection
 
 #pip install streamlit plotly pandas
 load_dotenv()
@@ -142,6 +143,7 @@ def manage_page_access():
     # Notificar a Streamlit que debe recargar la configuración
     st.rerun()
 
+
 # Inicializa estado de sesión
 if "auth_mode" not in st.session_state:
     st.session_state.auth_mode = "Login"
@@ -181,13 +183,24 @@ if not st.session_state.logged_in:
                 if len(password) < 8 or " " in password:
                     st.error("La contraseña debe tener 8 o más caracteres y no debe contener espacios")
                 elif username and password:
-                    # Simulación de login exitoso
-                    st.session_state.logged_in = True
-                    st.session_state.username = username
-                    st.session_state.rol = "Medico"  # Ejemplo
-                    st.success("¡Inicio de sesión exitoso!")
-                    time.sleep(1)
-                    st.rerun()
+                    if username and password:
+                        resultado = autenticar_usuario(username, password)
+                        if resultado['success']:
+                            st.success(resultado['message'])
+                            buscar_dni = obtener_dni_por_usuario(username)
+                            saber_rol = buscar_rol(username, password)
+                            if buscar_dni["success"]:
+                                dni = buscar_dni["dni"]
+                                rol= saber_rol["message"]
+                                st.session_state.logged_in = True
+                                st.session_state.username = username
+                                st.session_state.dni = dni
+                                st.session_state.rol = rol
+                                st.success("¡Inicio de sesión exitoso!")
+                                time.sleep(1)
+                                st.rerun()
+                        else:
+                            st.error(resultado['message'])
                 else:
                     st.error("Por favor completa ambos campos.")
     
@@ -201,22 +214,48 @@ if not st.session_state.logged_in:
             confirm_pass = st.text_input("🔑 Confirmar contraseña", type="password")
             rol = st.radio("👥 Selecciona tu rol:", ["Medico", "Admisiones"])
             submitted = st.form_submit_button("Registrarse")
-            
-            if submitted:
-                if not all([id_user, new_user, new_pass, confirm_pass]):
-                    st.error("Completa todos los campos.")
-                elif " " in new_user:
-                    st.error("El nombre de usuario no puede contener espacios")
-                elif new_pass != confirm_pass:
-                    st.error("Las contraseñas no coinciden.")
-                elif len(new_pass) < 8 or " " in new_pass:
-                    st.error("La contraseña debe tener 8 o más caracteres y no debe contener espacios")
+            if rol == "Médico":
+                respuesta = verificar_medico_por_dni(id_user)
+                if respuesta["success"]:
+                    if submitted:
+                        if not all([id_user, new_user, new_pass, confirm_pass]):
+                            st.error("Completa todos los campos.")
+                        elif " " in new_user:
+                            st.error("El nombre de usuario no puede contener espacios")
+                        elif new_pass != confirm_pass:
+                            st.error("Las contraseñas no coinciden.")
+                        elif len(new_pass) < 8 or " " in new_pass:
+                            st.error("La contraseña debe tener 8 o más caracteres y no debe contener espacios")
+                        else:
+                            nueva_cuenta= add_user(id_user, new_user, new_pass, rol)
+                            if nueva_cuenta:
+                                st.success("¡Usuario registrado con éxito! Ahora puedes iniciar sesión.")
+                                st.session_state.auth_mode = "Login"
+                                time.sleep(1)
+                                st.rerun()
+                            else:
+                                st.error("Ocurrió un error, intente nuevamente")
                 else:
-                    # Simulación de registro exitoso
-                    st.success("¡Usuario registrado con éxito! Ahora puedes iniciar sesión.")
-                    st.session_state.auth_mode = "Login"
-                    time.sleep(1)
-                    st.rerun()
+                    st.error("No se encuentra registrado en la base de datos")
+            else:
+                if submitted:
+                    if not all([id_user, new_user, new_pass, confirm_pass]):
+                        st.error("Completa todos los campos.")
+                    elif " " in new_user:
+                        st.error("El nombre de usuario no puede contener espacios")
+                    elif new_pass != confirm_pass:
+                        st.error("Las contraseñas no coinciden.")
+                    elif len(new_pass) < 8 or " " in new_pass:
+                        st.error("La contraseña debe tener 8 o más caracteres y no debe contener espacios")
+                    else:
+                        nueva_cuenta= add_user(id_user, new_user, new_pass, rol)
+                        if nueva_cuenta:
+                            st.success("¡Usuario registrado con éxito! Ahora puedes iniciar sesión.")
+                            st.session_state.auth_mode = "Login"
+                            time.sleep(1)
+                            st.rerun()
+                        else:
+                            st.error("Ocurrió un error, intente nuevamente")
     
     st.markdown('</div>', unsafe_allow_html=True)
     st.warning("🔒 Todas las páginas están bloqueadas hasta que inicies sesión.")
