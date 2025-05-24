@@ -221,7 +221,6 @@ else:
                         })
                     
                     df_estudios = pd.DataFrame(estudios_completos)
-                    
                     st.markdown("<div class='filter-container'>", unsafe_allow_html=True)
                     col1, col2, col3, col4 = st.columns(4)
                     with col1:
@@ -299,14 +298,14 @@ else:
                     st.error("No se encontró ningún paciente con el DNI proporcionado.")
 
         # --- Botón "agregar estudio" ---
-        if st.session_state.user_role == "medico":
-            if st.button("agregar estudio", key="btn_agregar_estudio_fixed"): 
-                st.session_state.mostrar_form_estudio = True
+        
+        if st.button("agregar estudio", key="btn_agregar_estudio_fixed"): 
+            st.session_state.mostrar_form_estudio = True
         else:
             pass
 
         # --- Formulario "Agregar nuevo estudio" ---
-        if st.session_state.mostrar_form_estudio and st.session_state.user_role == "medico":
+        if st.session_state.mostrar_form_estudio:
             with st.form("formulario_nuevo_estudio", border=True):
                 st.subheader("Agregar nuevo estudio")
                 
