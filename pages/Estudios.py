@@ -156,7 +156,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 #Este codigo del principio hace que la pagina se bloquee si no sos Medico
-if st.session_state.logged_in == False:
+if not st.session_state.logged_in:
     st.error("Debes iniciar sesion para acceder a esta página")
 
 else:

@@ -97,6 +97,8 @@ def crear_logo():
     </svg>
     """
 
+
+
 # Simulación de funciones de base de datos
 def manage_page_access():
     # Definir permisos por rol
@@ -151,6 +153,9 @@ if "auth_mode" not in st.session_state:
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
+if "rol" not in st.session_state:
+    st.session_state.rol = None
+
 # Página de Login/Registro
 if not st.session_state.logged_in:
     # Logo en la parte superior
@@ -186,12 +191,11 @@ if not st.session_state.logged_in:
                     if username and password:
                         resultado = autenticar_usuario(username, password)
                         if resultado['success']:
-                            st.success(resultado['message'])
                             buscar_dni = obtener_dni_por_usuario(username)
                             saber_rol = buscar_rol(username, password)
                             if buscar_dni["success"]:
                                 dni = buscar_dni["dni"]
-                                rol= saber_rol["message"]
+                                rol = saber_rol["message"]
                                 st.session_state.logged_in = True
                                 st.session_state.username = username
                                 st.session_state.dni = dni
