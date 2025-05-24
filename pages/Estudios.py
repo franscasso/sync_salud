@@ -166,7 +166,8 @@ else:
     else: #Todo tiene que estar adentro de este else
 # Título de la página
         st.markdown("<h1>Buscar estudios:</h1>", unsafe_allow_html=True)
-
+        if "mostrar_form_estudio" not in st.session_state:
+            st.session_state.mostrar_form_estudio = False
 # Campo de búsqueda principal del DNI
         dni_paciente_busqueda = st.text_input("", placeholder="ingresar DNI del paciente", key="dni_consulta_v6")
 
