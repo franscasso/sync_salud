@@ -1,16 +1,10 @@
 import streamlit as st
 import psycopg2
 from psycopg2.extras import RealDictCursor
-
+from functions import get_connection
 # Función para conectarse a la base de datos
-def get_connection():
-    return psycopg2.connect(
-        host="aws-0-us-east-1.pooler.supabase.com",
-        database="postgres",
-        user="postgres.oubnxmdpdosmyrorjiqp",
-        password="$EB6Y5rbR#z8_qh",
-        port="5432"
-    )
+
+
 
 def insertar_paciente(dni, nombre_completo, obra_social, fecha_nacimiento,
                       sexo, telefono, contacto_emergencia, grupo_sanguineo):
@@ -63,55 +57,64 @@ def obtener_hospitales():
     conn.close()
     return [(h["id_hospital"], h['nombre_hospital']) for h in hospitales]
 
-# Página de administración
-st.title("Administración: ¿Qué desea agregar?")
+#Esto es para que no accesa a la pagina si no es de admisiones
+if st.session_state.logged_in == False:
+    st.error("Debes iniciar sesion para acceder a esta página")
+
+else:
+
+    if st.session_state.rol != "Admisiones":
+        st.error("No tienes acceso a esta página")
+    else:
+        st.title("Administración")
+        st.markdown("### ¿Qué desea agregar?")
 
 # Opción para elegir entre paciente o médico
-opcion = st.radio("Seleccione qué desea agregar", ("Paciente", "Médico"))
+        opcion = st.radio("Seleccione qué desea agregar", ("Paciente", "Médico"))
 
-opciones_sangre = ["", "A+","A-", "B+","B-","AB+", "AB-","O+", "O-"]
+        opciones_sangre = ["", "A+","A-", "B+","B-","AB+", "AB-","O+", "O-"]
 
 # Formulario para agregar un paciente
-if opcion == "Paciente":
-    with st.form("Agregar Paciente"):
-        dni = st.text_input("DNI")
-        nombre_completo = st.text_input("Nombre y Apellido")
-        obra_social = st.text_input("Obra Social")
-        fecha_nacimiento = st.date_input("Fecha de nacimiento")
-        sexo = st.selectbox("Sexo", ["M", "F", "Otro"])
-        telefono = st.text_input("Teléfono")
-        contacto_emergencia = st.text_input("Contacto de Emergencia")
-        grupo_sanguineo = st.selectbox("Grupo Sanguíneo", opciones_sangre)
+        if opcion == "Paciente":
+            with st.form("Agregar Paciente"):
+                dni = st.text_input("DNI")
+                nombre_completo = st.text_input("Nombre y Apellido")
+                obra_social = st.text_input("Obra Social")
+                fecha_nacimiento = st.date_input("Fecha de nacimiento")
+                sexo = st.selectbox("Sexo", ["M", "F", "Otro"])
+                telefono = st.text_input("Teléfono")
+                contacto_emergencia = st.text_input("Contacto de Emergencia")
+                grupo_sanguineo = st.selectbox("Grupo Sanguíneo", opciones_sangre)
         
-        submitted = st.form_submit_button("Agregar Paciente")
-        if submitted:
-            insertar_paciente(dni, nombre_completo, obra_social, fecha_nacimiento,
+                submitted = st.form_submit_button("Agregar Paciente")
+                if submitted:
+                    insertar_paciente(dni, nombre_completo, obra_social, fecha_nacimiento,
                               sexo, telefono, contacto_emergencia, grupo_sanguineo)
-            st.success("Paciente agregado correctamente.")
+                    st.success("Paciente agregado correctamente.")
 
 # Formulario para agregar un médico
-elif opcion == "Médico":
-    with st.form("Agregar Médico"):
-        nombre_apellido = st.text_input("Nombre y Apellido")
-        numero_licencia = st.text_input("Número de Licencia")
+        elif opcion == "Médico":
+            with st.form("Agregar Médico"):
+                nombre_apellido = st.text_input("Nombre y Apellido")
+                numero_licencia = st.text_input("Número de Licencia")
 
-        categorias = obtener_categorias()
-        opciones_categoria=[ nombre for _, nombre in categorias]
+                categorias = obtener_categorias()
+                opciones_categoria=[ nombre for _, nombre in categorias]
 
-        categoria_seleccionada = st.selectbox("Selecciona la Categoría del Médico", opciones_categoria)
-        id_categoria= next((id for id, nombre in categorias if nombre ==categoria_seleccionada), None)
+                categoria_seleccionada = st.selectbox("Selecciona la Categoría del Médico", opciones_categoria)
+                id_categoria= next((id for id, nombre in categorias if nombre ==categoria_seleccionada), None)
 
-        hospitales = obtener_hospitales()
-        opciones_hospital =[nombre for _, nombre in hospitales]
+                hospitales = obtener_hospitales()
+                opciones_hospital =[nombre for _, nombre in hospitales]
 
-        hospital_seleccionado= st.selectbox("Hospital donde atiende", opciones_hospital)
-        id_hospital = next((id for id, nombre in hospitales if nombre == hospital_seleccionado), None)
+                hospital_seleccionado= st.selectbox("Hospital donde atiende", opciones_hospital)
+                id_hospital = next((id for id, nombre in hospitales if nombre == hospital_seleccionado), None)
 
 
-        submitted = st.form_submit_button("Agregar Médico")
-        if submitted:
-            insertar_medico(nombre_apellido, numero_licencia,id_hospital, id_categoria)
-            st.success("Médico agregado correctamente")
+                submitted = st.form_submit_button("Agregar Médico")
+                if submitted:
+                    insertar_medico(nombre_apellido, numero_licencia,id_hospital, id_categoria)
+                    st.success("Médico agregado correctamente")
 
 
 
