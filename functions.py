@@ -120,6 +120,7 @@ def get_connection():
         password="$EB6Y5rbR#z8_qh",
         port="5432"
     )
+<<<<<<< Updated upstream
 
 
 def autenticar_usuario(nombre_usuario, contraseña):
@@ -227,3 +228,5 @@ def obtener_dni_por_usuario(nombre_usuario):
         'dni': f"{dni}",
         'message': f"El DNI del usuario '{nombre_usuario}' es {dni}."
     }
+=======
+>>>>>>> Stashed changes

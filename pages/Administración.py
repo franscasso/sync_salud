@@ -58,7 +58,11 @@ def obtener_hospitales():
     return [(h["id_hospital"], h['nombre_hospital']) for h in hospitales]
 
 #Esto es para que no accesa a la pagina si no es de admisiones
+<<<<<<< Updated upstream
 if not st.session_state.logged_in:
+=======
+if st.session_state.logged_in == False:
+>>>>>>> Stashed changes
     st.error("Debes iniciar sesion para acceder a esta página")
 
 else:

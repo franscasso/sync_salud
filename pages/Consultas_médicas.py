@@ -38,6 +38,7 @@ def obtener_historial_legible_por_dni(dni):
 
 
 # Añadir la ruta del directorio .streamlit al sistema para poder importar módulos
+<<<<<<< Updated upstream
 if not st.session_state.logged_in:
     st.error("Debes iniciar sesión para acceder a esta página")
 else:
@@ -52,4 +53,17 @@ else:
         if opcion == "Ver historial":
             with st.form("Historial de consultas"):
                 dni_paciente= st.text_input("DNI de paciente")
+=======
+if st.session_state.rol != "Medico":
+    st.error("No tienes acceso a esta página")
+else:
+    st.title("Consultas médicas")
+    st.markdown("### ¿Qué acción desea realizar?")
+
+    opcion = st.radio("Seleccione operación", ("Ver historial", "Agregar consulta"))
+
+    if opcion == "Ver historial":
+        with st.form("Historial de consultas"):
+            dni_paciente= st.text_input("DNI de paciente")
+>>>>>>> Stashed changes
 
