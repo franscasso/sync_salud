@@ -97,6 +97,64 @@ def execute_query(query, params= None, conn=None, is_select=True):
         if conn and not is_select:
             conn.rollback()
         return pd.DataFrame() if is_select else False
+    
+def execute_query_simple(query, params=None, is_select=True):
+    """
+    Versión simplificada que siempre maneja su propia conexión.
+    """
+    try:
+        # Crear conexión
+        conn = connect_to_supabase()
+        cursor = conn.cursor()
+        
+        # Ejecutar query
+        if params:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
+        
+        if is_select:
+            # Para SELECT queries
+            results = cursor.fetchall()
+            
+            # Obtener nombres de columnas
+            if cursor.description:
+                colnames = [desc[0] for desc in cursor.description]
+                
+                # Crear DataFrame
+                if results:
+                    df = pd.DataFrame(results, columns=colnames)
+                else:
+                    # DataFrame vacío pero con columnas
+                    df = pd.DataFrame(columns=colnames)
+                
+                cursor.close()
+                conn.close()
+                return df
+            else:
+                cursor.close()
+                conn.close()
+                return pd.DataFrame()
+        else:
+            # Para INSERT/UPDATE/DELETE
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+            
+    except Exception as e:
+        print(f"Error executing query: {e}")
+        try:
+            if 'cursor' in locals():
+                cursor.close()
+            if 'conn' in locals():
+                if not is_select:
+                    conn.rollback()
+                conn.close()
+        except:
+            pass
+        
+        return pd.DataFrame() if is_select else False
 
 def add_user(dni, nombre_usuario, contraseña, rol):
     """
@@ -120,7 +178,6 @@ def get_connection():
         password="$EB6Y5rbR#z8_qh",
         port="5432"
     )
-<<<<<<< Updated upstream
 
 
 def autenticar_usuario(nombre_usuario, contraseña):
@@ -136,7 +193,7 @@ def autenticar_usuario(nombre_usuario, contraseña):
     """
     query = "SELECT contraseña FROM users WHERE nombre_usuario = %s"
     params = (nombre_usuario,)
-    resultado = execute_query(query, params=params, is_select=True)
+    resultado = execute_query_simple(query, params=params, is_select=True)
 
     if resultado.empty:
         return {'success': False, 'message': 'El usuario no existe.'}
@@ -161,7 +218,7 @@ def buscar_rol(nombre_usuario, contraseña):
     """
     query = "SELECT contraseña, rol FROM users WHERE nombre_usuario = %s"
     params = (nombre_usuario,)  
-    resultado = execute_query(query, params=params, is_select=True)
+    resultado = execute_query_simple(query, params=params, is_select=True)
 
     if resultado.empty:
         return {'success': False, 'rol': None, 'message': 'El usuario no existe.'}
@@ -174,32 +231,7 @@ def buscar_rol(nombre_usuario, contraseña):
     
     
 
-def verificar_medico_por_dni(dni):
-    """
-    Verifica si un médico existe por su DNI y devuelve el hospital al que pertenece.
 
-    Args:
-        dni (str or int): DNI del médico.
-
-    Returns:
-        dict: {'success': bool, 'id_hospital': int or None, 'message': str}
-    """
-    query = "SELECT id_hospital FROM medicos WHERE dni = %s"
-    params = (dni,)
-    resultado = execute_query(query, params=params, is_select=True)
-
-    if resultado.empty:
-        return {
-            'success': False,
-            'id_hospital': None,
-            'message': 'No se encontró ningún médico con ese DNI.'
-        }
-
-    id_hospital = resultado.iloc[0]['id_hospital']
-    return {
-        'success': True,
-        'id_hospital': id_hospital,
-    }
 
 def obtener_dni_por_usuario(nombre_usuario):
     """
@@ -213,7 +245,7 @@ def obtener_dni_por_usuario(nombre_usuario):
     """
     query = "SELECT id FROM users WHERE nombre_usuario = %s"
     params = (nombre_usuario,)
-    resultado = execute_query(query, params=params, is_select=True)
+    resultado = execute_query_simple(query, params=params, is_select=True)
 
     if resultado.empty:
         return {
@@ -228,5 +260,64 @@ def obtener_dni_por_usuario(nombre_usuario):
         'dni': f"{dni}",
         'message': f"El DNI del usuario '{nombre_usuario}' es {dni}."
     }
-=======
->>>>>>> Stashed changes
+
+def verificar_medico_por_dni(dni):
+    """
+    Verifica si un médico existe por su DNI y retorna formato diccionario.
+
+    Args:
+        dni (str or int): DNI del médico.
+
+    Returns:
+        dict: {'success': bool, 'message': str}
+    """
+    query = "SELECT COUNT(*) as total FROM medicos WHERE dni = %s"
+    params = (dni,)
+    resultado = execute_query_simple(query, params=params, is_select=True)
+
+    if resultado.empty:
+        return {
+            'success': False,
+            'message': 'Error al consultar la base de datos.'
+        }
+    
+    count = resultado.iloc[0]['total']
+    
+    if count > 0:
+        return {
+            'success': True,
+            'message': 'Médico encontrado en la base de datos.'
+        }
+    else:
+        return {
+            'success': False,
+            'message': 'No se encontró ningún médico con ese DNI.'
+        }
+
+def obtener_hospital_por_dni_medico(dni):
+    """
+    Obtiene el ID del hospital al que pertenece un médico por su DNI.
+
+    Args:
+        dni (str or int): DNI del médico.
+
+    Returns:
+        dict: {'success': bool, 'id_hospital': int or None, 'message': str}
+    """
+    query = "SELECT id_hospital FROM medicos WHERE dni = %s"
+    params = (dni,)
+    resultado = execute_query_simple(query, params=params, is_select=True)
+
+    if resultado.empty:
+        return {
+            'success': False,
+            'id_hospital': None,
+            'message': 'No se encontró ningún médico con ese DNI.'
+        }
+
+    id_hospital = resultado.iloc[0]['id_hospital']
+    return {
+        'success': True,
+        'id_hospital': id_hospital,
+        'message': f'Médico encontrado. Pertenece al hospital ID: {id_hospital}'
+    }

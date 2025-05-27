@@ -23,13 +23,13 @@ def insertar_paciente(dni, nombre_completo, obra_social, fecha_nacimiento,
 
 
 # Función para insertar un médico
-def insertar_medico(nombre, licencia, id_hospital, id_categoria):
+def insertar_medico(nombre, licencia, id_hospital, id_categoria, dni):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO MEDICOS(nombre, licencia, id_hospital, id_categoria)
-        VALUES (%s, %s, %s, %s) RETURNING id_medico
-    """, (nombre,licencia, id_hospital, id_categoria))
+        INSERT INTO MEDICOS(nombre, licencia, id_hospital, id_categoria, dni)
+        VALUES (%s, %s, %s, %s, %s) RETURNING id_medico
+    """, (nombre,licencia, id_hospital, id_categoria, dni))
     id_medico = cur.fetchone()[0]
     conn.commit()
     cur.close()
@@ -58,11 +58,8 @@ def obtener_hospitales():
     return [(h["id_hospital"], h['nombre_hospital']) for h in hospitales]
 
 #Esto es para que no accesa a la pagina si no es de admisiones
-<<<<<<< Updated upstream
-if not st.session_state.logged_in:
-=======
+
 if st.session_state.logged_in == False:
->>>>>>> Stashed changes
     st.error("Debes iniciar sesion para acceder a esta página")
 
 else:
@@ -101,6 +98,7 @@ else:
             with st.form("Agregar Médico"):
                 nombre_apellido = st.text_input("Nombre y Apellido")
                 numero_licencia = st.text_input("Número de Licencia")
+                dni = st.text_input("Número de DNI")
 
                 categorias = obtener_categorias()
                 opciones_categoria=[ nombre for _, nombre in categorias]
@@ -117,7 +115,7 @@ else:
 
                 submitted = st.form_submit_button("Agregar Médico")
                 if submitted:
-                    insertar_medico(nombre_apellido, numero_licencia,id_hospital, id_categoria)
+                    insertar_medico(nombre_apellido, numero_licencia,id_hospital, id_categoria, dni)
                     st.success("Médico agregado correctamente")
 
 

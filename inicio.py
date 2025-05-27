@@ -220,7 +220,7 @@ if not st.session_state.logged_in:
             submitted = st.form_submit_button("Registrarse")
             if rol == "Médico":
                 respuesta = verificar_medico_por_dni(id_user)
-                if respuesta["success"]:
+                if respuesta["success"] == True:
                     if submitted:
                         if not all([id_user, new_user, new_pass, confirm_pass]):
                             st.error("Completa todos los campos.")
