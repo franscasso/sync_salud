@@ -384,7 +384,7 @@ if not st.session_state.logged_in:
             submitted = st.form_submit_button("Registrarse")
             if rol == "Médico":
                 respuesta = verificar_medico_por_dni(id_user)
-                if respuesta["success"] == True:
+                if respuesta:
                     if submitted:
                         if not all([id_user, new_user, new_pass, confirm_pass]):
                             st.error("Completa todos los campos.")
@@ -488,7 +488,7 @@ if st.session_state.get("logged_in"):
             </p>
             <div>
                 <h4>📊 Información obtenida en cada consulta:</h4>
-                <ul>
+                <ul style="font-size:14px;">
                     <li>📅 <strong>Fecha</strong></li>
                     <li>👨‍⚕️ <strong>Médico</strong></li>
                     <li>🎯 <strong>Especialidad del profesional</strong></li>
@@ -521,12 +521,116 @@ if st.session_state.get("logged_in"):
         </div>
         """, unsafe_allow_html=True)
         elif page_analisis == "Estudios":
-            pass
+            st.markdown("""
+        <div class="guide-container">
+            <div class="guide-header">
+                <div class="guide-icon">🏥</div>
+                <h3>Estudios</h3>
+            </div>  
+            <p>
+                En esta página podrás <strong>visualizar estudios médicos pasados</strong> o <strong>agregar un estudio nuevo</strong> 
+                del paciente utilizando su número de DNI.
+            </p>
+            <div>
+                <h4>📊 Información obtenida en cada estudios:</h4>
+                <ul style="font-size:14px;">
+                    <li>📅 <strong>Fecha</strong></li>
+                    <li>👨‍⚕️ <strong>Médico</strong></li>
+                    <li>🎯 <strong>Especialidad del profesional</strong></li>
+                    <li>🏥 <strong>Hospital</strong></li>
+                    <li>📋 <strong>Categoria del estudio</strong></li>
+                    <li>🔎 <strong>Estudio</strong></li>
+                    <li>📝 <strong>Observaciones realizadas</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         elif page_analisis == "Medicamentos":
-            pass
+            st.markdown("""
+        <div class="guide-container">
+            <div class="guide-header">
+                <div class="guide-icon">🏥</div>
+                <h3>Medicamentos</h3>
+            </div>  
+            <p>
+                En esta página podrás <strong>visualizar medicamentos recetados</strong> del paciente o <strong>recetar medicamentos nuevos</strong>
+                utilizando su número de DNI.
+            </p>
+            <div>
+                <h4>📊 Información obtenida en cada estudios:</h4>
+                <ul style="font-size:14px;">
+                    <li>👨‍⚕️ <strong>Médico</strong></li>
+                    <li>💊 <strong>Medicamento recetado</strong></li>
+                    <li>📋 <strong>Tipo de medicamento</strong></li>
+                    <li>📝 <strong>Indicaciones</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
             # Información sobre la empresa
     else:
-        pass
+        st.markdown("""
+        <div style="
+            background-color: #e0f7fa;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 6px solid #00acc1;
+            margin-bottom: 20px;
+            font-family: sans-serif;
+        ">
+            <h4 style="margin-top: 0;">¿Es tu primera vez usando la plataforma?</h4>
+            <p style="margin-bottom: 10px;">
+                <strong>No te preocupes</strong> te preparamos una guía rápida sobre la sección disponibles para el personal administrativo. En la  pestaña "Administración" podrás <strong>agregar pacientes</strong> o <strong>agregar médicos</strong> 
+                a la base de datos. Elige una opción para aprender más de la funcionalidad de la página.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        page_analisis = st.selectbox("📂 Seleccioná una sección para explorar su función",["", "Médico", "Paciente"])
+        if page_analisis == "Médico":
+            st.markdown("""
+        <div class="guide-container">
+            <div class="guide-header">
+                <div class="guide-icon">🏥</div>
+                <h3>Médicos</h3>
+            </div>  
+            <div>
+                <h4>📊 Información necesaria para agregar un médico:</h4>
+                <ul style="font-size:14px;">
+                    <li>🪪 <strong>DNI</strong></li>
+                    <li>👤 <strong>Nombre y apellidoo</strong></li>
+                    <li>📋 <strong>Licencia</strong></li>
+                    <li>🩺 <strong>Especialidad del médico</strong></li>
+                    <li>🏥 <strong>Hospital</strong>
+                    </li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+                
+        elif page_analisis == "Paciente":
+            st.markdown("""
+        <div class="guide-container">
+            <div class="guide-header">
+                <div class="guide-icon">🏥</div>
+                <h3>Paciente</h3>
+            </div>  
+            <div>
+                <h4>📊 Información necesario para agregar un paciente:</h4>
+                <ul style="font-size:14px;">
+                    <li>🪪 <strong>DNI</strong></li>
+                    <li>👤 <strong>Nombre y apellidoo</strong></li>
+                    <li>📋 <strong>Obra socialo</strong></li>
+                    <li>📅 <strong>Fecha de nacimientoo</strong></li>
+                    <li>❔ <strong>Sexo</strong></li>
+                    <li>📱 <strong>Teléfono</strong></li>
+                    <li>🚨 <strong>Contacto de emrgencia</strong></li>
+                    <li>🩸 <strong>Grupo sanguíneo</strong>
+                    </li>
+                </ul>
+             </div>
+            """, unsafe_allow_html=True)
+       
     st.markdown("""
     <div class="info-card">
         <h3>🏥 Sobre SyncSalud</h3>

@@ -115,7 +115,7 @@ else:
                 categorias = obtener_categorias()
                 opciones_categoria=[ nombre for _, nombre in categorias]
 
-                categoria_seleccionada = st.selectbox("Selecciona la Categoría del Médico", opciones_categoria)
+                categoria_seleccionada = st.selectbox("Selecciona la Especialidad  del Médico", opciones_categoria)
                 id_categoria= next((id for id, nombre in categorias if nombre ==categoria_seleccionada), None)
 
                 hospitales = obtener_hospitales()

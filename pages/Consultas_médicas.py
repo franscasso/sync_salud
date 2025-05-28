@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from psycopg2.extras import RealDictCursor
-from functions import get_connection, execute_query
+from functions import get_connection, execute_query, obtener_hospital_por_dni_medico
 
 # --- Fix visual para texto blanco en fondo blanco dentro de expanders ---
 st.markdown("""

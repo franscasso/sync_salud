@@ -275,24 +275,19 @@ def verificar_medico_por_dni(dni):
     params = (dni,)
     resultado = execute_query_simple(query, params=params, is_select=True)
 
+    print(resultado)
+
     if resultado.empty:
-        return {
-            'success': False,
-            'message': 'Error al consultar la base de datos.'
-        }
+        return False
     
     count = resultado.iloc[0]['total']
+
+    print(count)
     
     if count > 0:
-        return {
-            'success': True,
-            'message': 'Médico encontrado en la base de datos.'
-        }
+        return True
     else:
-        return {
-            'success': False,
-            'message': 'No se encontró ningún médico con ese DNI.'
-        }
+        return False
 
 def obtener_hospital_por_dni_medico(dni):
     """
@@ -305,6 +300,34 @@ def obtener_hospital_por_dni_medico(dni):
         dict: {'success': bool, 'id_hospital': int or None, 'message': str}
     """
     query = "SELECT id_hospital FROM medicos WHERE dni = %s"
+    params = (dni,)
+    resultado = execute_query_simple(query, params=params, is_select=True)
+
+    if resultado.empty:
+        return {
+            'success': False,
+            'id_hospital': None,
+            'message': 'No se encontró ningún médico con ese DNI.'
+        }
+
+    id_hospital = resultado.iloc[0]['id_hospital']
+    return {
+        'success': True,
+        'id_hospital': id_hospital,
+        'message': f'Médico encontrado. Pertenece al hospital ID: {id_hospital}'
+    }
+
+def obtener_hospital_por_dni_medico(dni):
+    """
+    Obtiene el ID del hospital al que pertenece un médico por su DNI.
+
+    Args:
+        dni (str or int): DNI del médico.
+
+    Returns:
+        dict: {'success': bool, 'id_categoria': int or None, 'message': str}
+    """
+    query = "SELECT id_categoria FROM medicos WHERE dni = %s"
     params = (dni,)
     resultado = execute_query_simple(query, params=params, is_select=True)
 
