@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from psycopg2.extras import RealDictCursor
-from functions import get_connection, execute_query, obtener_hospital_por_dni_medico
+from functions import get_connection, execute_query, obtener_id_categoria_por_dni_medico, obtener_categoria_por_id
 
 # --- Fix visual para texto blanco en fondo blanco dentro de expanders ---
 st.markdown("""
@@ -113,6 +113,7 @@ def obtener_id_medico_por_dni(dni):
         'id_medico': id_medico,
         'message': 'ID del médico encontrado correctamente.'
     }
+
 
 
 # -- INTERFAZ --

@@ -317,9 +317,9 @@ def obtener_hospital_por_dni_medico(dni):
         'message': f'Médico encontrado. Pertenece al hospital ID: {id_hospital}'
     }
 
-def obtener_hospital_por_dni_medico(dni):
+def obtener_id_categoria_por_dni_medico(dni):
     """
-    Obtiene el ID del hospital al que pertenece un médico por su DNI.
+    Obtiene el ID de categoria que tiene un médico
 
     Args:
         dni (str or int): DNI del médico.
@@ -338,9 +338,35 @@ def obtener_hospital_por_dni_medico(dni):
             'message': 'No se encontró ningún médico con ese DNI.'
         }
 
-    id_hospital = resultado.iloc[0]['id_hospital']
+    id_categoria =  resultado.iloc[0]['id_categoria']
     return {
         'success': True,
-        'id_hospital': id_hospital,
-        'message': f'Médico encontrado. Pertenece al hospital ID: {id_hospital}'
+        'id_categoria': id_categoria
     }
+
+def obtener_categoria_por_id(id_tipo_categoria):
+    """
+    Obtiene categoria con el ID
+
+    Args:
+        dni (str or int): id_tipo_categoria
+
+    Returns:
+        dict: {'success': bool, 'nombre_categoria':str or None, 'message': str}
+    """
+    query = "SELECT nombre_categoria FROM categorias WHERE id_tipo_categoria = %s"
+    params = (id_tipo_categoria,)
+    resultado = execute_query_simple(query, params=params, is_select=True)
+
+    if resultado.empty:
+        return {
+            'success': False,
+            'nombre_categoria': None
+        }
+
+    nombre_categoria = resultado.iloc[0]['nombre_categoria']
+    return {
+        'success': True,
+        'nombre_categoria': nombre_categoria
+    }
+
