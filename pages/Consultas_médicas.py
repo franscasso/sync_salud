@@ -154,7 +154,7 @@ else:
                                 st.write(f"*⚠️ Gravedad:* {row['Gravedad']}")
 
         elif opcion == "➕ Agregar consulta":
-            st.title("➕ Nueva consulta médica")
+            st.markdown("## ➕ Nueva consulta médica")
 
             dni_medico = st.session_state.dni  # Este valor debería venir del login
             buscar_id_medico = obtener_id_medico_por_dni(dni_medico)
@@ -175,7 +175,7 @@ else:
 
                 col1, col2 = st.columns(2)
                 with col1:
-                    gravedad = st.slider("⚠️ Gravedad (1=leve, 5=crítico)", 1, 5, 3)
+                    gravedad = st.slider("⚠️ Gravedad (1=leve, 5=crítico)", 1 ,5, 3)
                 with col2:
                     fecha_consulta = st.date_input("📅 Fecha de la consulta")
 
@@ -185,7 +185,7 @@ else:
 
                 if enviar:
                     try:
-                        id_paciente = paciente_sel.split(" - ")[0]
+                        id_paciente = int(paciente_sel.split(" - ")[0])
                         id_hospital = int(hospital_sel.split(" - ")[0])
                         id_categoria = int(categoria_sel.split(" - ")[0])
 

@@ -18,6 +18,7 @@ import plotly.graph_objects as go
 import time
 
 # Configuración de la página
+
 st.set_page_config(
     page_title="SyncSalud - Login",
     page_icon="🏥",
@@ -45,10 +46,10 @@ st.markdown("""
         box-shadow: 0 5px 10px rgba(0,0,0,0.2);
     }
     .login-container {
-        background-color: white;
-        padding: 2rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        background-color: transparent; /* Cambiar a transparente para quitar el cuadrado blanco */
+        padding: 0; /* Quitar padding */
+        border-radius: 0; /* Quitar border-radius */
+        box-shadow: none; /* Quitar sombra */
     }
     .info-card {
         background-color: #e3f2fd;
@@ -66,6 +67,140 @@ st.markdown("""
         margin-bottom: 5px;
         padding-left: 5px;
     }
+    .guide-container {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin: 1rem 0;
+    }
+    
+    .guide-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .guide-icon {
+        font-size: 2rem;
+        margin-right: 10px;
+    }
+    
+    .guide-title {
+        margin: 0;
+        color: #1a73e8;
+        font-size: 1.8rem;
+    }
+    
+    .guide-description {
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 20px;
+        color: #333;
+    }
+    
+    .info-section {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .info-title {
+        color: #495057;
+        margin-bottom: 15px;
+        font-size: 1.2rem;
+    }
+    
+    .info-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .info-item {
+        padding: 8px 0;
+        display: flex;
+        align-items: center;
+        font-size: 15px;
+    }
+    
+    .item-icon {
+        margin-right: 10px;
+        font-size: 1.1rem;
+    }
+    
+    .gravity-levels {
+        margin-top: 15px;
+    }
+    
+    .level-5 {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .level-4 {
+        background: linear-gradient(135deg, #fd7e14, #e8590c);
+        color: white;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .level-3 {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        color: #212529;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .level-2 {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .level-1 {
+        background: linear-gradient(135deg, #28a745, #1e7e34);
+        color: white;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .level-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .level-description {
+        font-size: 13px;
+        opacity: 0.9;
+    }
+    
+    .tip-section {
+        background-color: #e3f2fd;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #2196f3;
+        margin-top: 20px;
+    }
+    
+    .tip-text {
+        margin: 0;
+        font-style: italic;
+        color: #1976d2;
+    }
     .contact-card {
         background-color: #fff3e0;
         padding: 1.5rem;
@@ -74,8 +209,12 @@ st.markdown("""
         border-left: 4px solid #ff9800;
     }
     .logo-container {
-        text-align: center;
+        text-align: center; /* Centrar el logo */
         margin-bottom: 2rem;
+    }
+    .auth-button-container {
+        text-align: center; /* Centrar el botón */
+        margin-bottom: 1rem;
     }
     .welcome-text {
         text-align: center;
@@ -84,16 +223,42 @@ st.markdown("""
         font-weight: bold;
         margin-bottom: 1rem;
     }
+    .guide-container {
+        background-color: #f3e8ff;
+        padding: 20px;
+        border-radius: 12px;
+        font-family: sans-serif;
+        color: #333;
+    }
+    .guide-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .guide-icon {
+        font-size: 32px;
+        margin-right: 10px;
+    }
+    .level-5, .level-4, .level-3, .level-2, .level-1 {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 8px;
+    }
+    .level-5 { background-color: #f8d7da; }
+    .level-4 { background-color: #fff3cd; }
+    .level-3 { background-color: #d1ecf1; }
+    .level-2 { background-color: #d4edda; }
+    .level-1 { background-color: #e2e3e5; }
 </style>
 """, unsafe_allow_html=True)
 
 # Función para generar el logo (SVG)
 def crear_logo():
     return """
-    <svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="10" y="10" width="40" height="40" rx="10" fill="#1a73e8"/>
-        <path d="M25 25 L25 35 L35 35 M25 30 L30 30" stroke="white" stroke-width="3" stroke-linecap="round"/>
-        <text x="60" y="40" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#1a73e8">SyncSalud</text>
+    <svg width="300" height="80" viewBox="0 0 300 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="15" width="50" height="50" rx="12" fill="#1a73e8"/>
+        <path d="M30 30 L30 45 L45 45 M30 37.5 L37.5 37.5" stroke="white" stroke-width="4" stroke-linecap="round"/>
+        <text x="75" y="55" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#1a73e8">SyncSalud</text>
     </svg>
     """
 
@@ -158,24 +323,23 @@ if "rol" not in st.session_state:
 
 # Página de Login/Registro
 if not st.session_state.logged_in:
-    # Logo en la parte superior
+    # Logo en la parte superior (ahora alineado a la izquierda)
     st.markdown(f'<div class="logo-container">{crear_logo()}</div>', unsafe_allow_html=True)
     
-    # Contenedor de login
+    # Contenedor de login (sin fondo blanco)
     st.markdown('<div class="login-container">', unsafe_allow_html=True)
     
-    # Botón para cambiar entre Login y Sign Up
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.session_state.auth_mode == "Login":
-            if st.button("¿No tienes cuenta? Regístrate aquí", key="switch_to_signup"):
-                st.session_state.auth_mode = "Sign Up"
-                st.rerun()
-        else:
-            if st.button("¿Ya tienes cuenta? Inicia sesión aquí", key="switch_to_login"):
-                st.session_state.auth_mode = "Login"
-                st.rerun()
-    
+    # Botón para cambiar entre Login y Sign Up (alineado a la izquierda)
+    st.markdown('<div class="auth-button-container">', unsafe_allow_html=True)
+    if st.session_state.auth_mode == "Login":
+        if st.button("¿No tienes cuenta? Regístrate aquí", key="switch_to_signup"):
+            st.session_state.auth_mode = "Sign Up"
+            st.rerun()
+    else:
+        if st.button("¿Ya tienes cuenta? Inicia sesión aquí", key="switch_to_login"):
+            st.session_state.auth_mode = "Login"
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
     # Formulario de LOGIN
     if st.session_state.auth_mode == "Login":
         st.markdown("### 🔐 Iniciar sesión")
@@ -293,35 +457,101 @@ if st.session_state.get("logged_in"):
             st.rerun()
     # Mensaje de bienvenida personalizado
     st.markdown(f'<div class="welcome-text">¡Bienvenido a SyncSalud, {st.session_state.username}! 👋</div>', unsafe_allow_html=True)
-    
-    # Información sobre la empresa
-    st.markdown("""
-    <div class="info-card">
-        <h3>🏥 Sobre SyncSalud</h3>
-        <p>SyncSalud es una plataforma innovadora diseñada para transformar la gestión clínica y hospitalaria. 
-        Nuestra misión es optimizar la eficiencia de las consultas médicas, reducir los tiempos de espera y 
-        digitalizar la historia clínica de los pacientes, garantizando su preservación en el tiempo y su acceso ágil y seguro.</p>
-        <h4>✨ Beneficios clave:</h4>
-        <ul>
-            <li>Gestión digital de historias clínicas</li>
-            <li>Prescripción electrónica de medicamentos</li>
-            <li>Acceso rápido a información crítica del paciente</li>
-            <li>Reducción del 40% en tiempos administrativos</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Sección de contacto
-    st.markdown("""
-    <div class="contact-card">
-        <h3>📞 ¿Necesitas ayuda?</h3>
-        <p>Nuestro equipo de soporte está siempre disponible para asistirte:</p>
-        <p><strong>📧 Email:</strong> soporte@syncsalud.com</p>
-        <p><strong>☎️ Teléfono:</strong> +54 11 1234-5678</p>
-        <p><strong>💬 WhatsApp:</strong> +54 9 11 5678-9012</p>
-        <p><strong>🕐 Horario:</strong> Lunes a Viernes, 8:00 - 20:00</p>
-    </div>
-    """, unsafe_allow_html=True)
+    if st.session_state.rol == "Medico":
+        st.markdown("""
+        <div style="
+            background-color: #e0f7fa;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 6px solid #00acc1;
+            margin-bottom: 20px;
+            font-family: sans-serif;
+        ">
+            <h4 style="margin-top: 0;">¿Es tu primera vez usando la plataforma?</h4>
+            <p style="margin-bottom: 10px;">
+                <strong>No te preocupes</strong> te preparamos una guía rápida sobre las distintas secciones disponibles para el personal médico. Seleccioná una página para conocer qué podés hacer en ella.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        page_analisis = st.selectbox("📂 Seleccioná una sección para explorar su función", 
+                                 ["", "Consultas médicas", "Estudios", "Medicamentos"])
+        if page_analisis == "Consultas médicas":
+            st.markdown("""
+        <div class="guide-container">
+            <div class="guide-header">
+                <div class="guide-icon">🏥</div>
+                <h3>Consultas médicas</h3>
+            </div>  
+            <p>
+                En esta página podrás <strong>visualizar consultas médicas pasadas</strong> o <strong>agregar una consulta actual</strong> 
+                del paciente utilizando su número de DNI.
+            </p>
+            <div>
+                <h4>📊 Información obtenida en cada consulta:</h4>
+                <ul>
+                    <li>📅 <strong>Fecha</strong></li>
+                    <li>👨‍⚕️ <strong>Médico</strong></li>
+                    <li>🎯 <strong>Especialidad del profesional</strong></li>
+                    <li>🏥 <strong>Hospital</strong></li>
+                    <li>📝 <strong>Breve detalle de la consulta</strong></li>
+                    <li>⚠️ <strong>Escala de gravedad:</strong>
+                        <div class="level-5">
+                            <strong>🚨 Nivel 5: RESUCITACIÓN</strong><br>
+                            Paciente en estado crítico, con riesgo vital inmediato que requiere atención médica inmediata y reanimación.
+                        </div>
+                        <div class="level-4">
+                            <strong>🔥 Nivel 4: EMERGENCIA</strong><br>
+                            Paciente con riesgo vital inminente, pero que requiere atención médica dentro de 15 minutos.
+                        </div>
+                        <div class="level-3">
+                            <strong>⚡ Nivel 3: URGENTE</strong><br>
+                            Paciente que necesita atención médica en un plazo de 30 minutos a 1 hora.
+                        </div>
+                        <div class="level-2">
+                            <strong>📋 Nivel 2: POCO URGENTE</strong><br>
+                            Puede esperar hasta 2 horas sin riesgo para la vida.
+                        </div>
+                        <div class="level-1">
+                            <strong>✅ Nivel 1: NO URGENTE</strong><br>
+                            Situación no urgente, puede ser atendida más adelante.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        elif page_analisis == "Estudios":
+            pass
+        elif page_analisis == "Medicamentos":
+            pass
+            # Información sobre la empresa
+        st.markdown("""
+        <div class="info-card">
+             <h3>🏥 Sobre SyncSalud</h3>
+            <p>SyncSalud es una plataforma innovadora diseñada para transformar la gestión clínica y hospitalaria. 
+            Nuestra misión es optimizar la eficiencia de las consultas médicas, reducir los tiempos de espera y 
+            digitalizar la historia clínica de los pacientes, garantizando su preservación en el tiempo y su acceso ágil y seguro.</p>
+            <h4>✨ Beneficios clave:</h4>
+            <ul>
+                <li>Gestión digital de historias clínicas</li>
+                <li>Prescripción electrónica de medicamentos</li>
+                <li>Acceso rápido a información crítica del paciente</li>
+                <li>Reducción del 40% en tiempos administrativos</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+            
+            # Sección de contacto
+        st.markdown("""
+            <div class="contact-card">
+                <h3>📞 ¿Necesitas ayuda?</h3>
+                <p>Nuestro equipo de soporte está siempre disponible para asistirte:</p>
+                <p>📧 Email:</strong> soporte@syncsalud.com</p>
+                <p>☎️ Teléfono:</strong> +54 11 1234-5678</p>
+                <p>💬 WhatsApp:</strong> +54 9 11 5678-9012</p>
+                <p>🕐 Horario:</strong> Lunes a Viernes, 8:00 - 20:00</p>
+            </div>
+        """, unsafe_allow_html=True)
     
     # Gráfico de mejora en la eficacia
     st.markdown("### 📊 Impacto de SyncSalud en la Eficiencia Médica")

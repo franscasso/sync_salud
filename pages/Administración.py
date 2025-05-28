@@ -36,6 +36,18 @@ def insertar_medico(nombre, licencia, id_hospital, id_categoria, dni):
     conn.close()
     return id_medico
 
+def insertar_med_hosp(id_medico, id_hospital):
+    conn =get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSER INTO MEDICO_HOSPITAL(id_medico, id_hospital)
+        VALUES(%s, %s) RETURNING id_med_hosp
+    """, (id_medico, id_hospital))
+    id_med_hosp = cur.fetchone()[0]
+    conn.commit()
+    cur.close()
+    conn.close()
+    return id_med_hosp
 
 # Función para obtener las categorías
 def obtener_categorias():
@@ -117,6 +129,7 @@ else:
                 if submitted:
                     insertar_medico(nombre_apellido, numero_licencia,id_hospital, id_categoria, dni)
                     st.success("Médico agregado correctamente")
+
 
 
 
