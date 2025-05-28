@@ -525,33 +525,35 @@ if st.session_state.get("logged_in"):
         elif page_analisis == "Medicamentos":
             pass
             # Información sobre la empresa
-        st.markdown("""
-        <div class="info-card">
-             <h3>🏥 Sobre SyncSalud</h3>
-            <p>SyncSalud es una plataforma innovadora diseñada para transformar la gestión clínica y hospitalaria. 
-            Nuestra misión es optimizar la eficiencia de las consultas médicas, reducir los tiempos de espera y 
-            digitalizar la historia clínica de los pacientes, garantizando su preservación en el tiempo y su acceso ágil y seguro.</p>
-            <h4>✨ Beneficios clave:</h4>
-            <ul>
-                <li>Gestión digital de historias clínicas</li>
-                <li>Prescripción electrónica de medicamentos</li>
-                <li>Acceso rápido a información crítica del paciente</li>
-                <li>Reducción del 40% en tiempos administrativos</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+    else:
+        pass
+    st.markdown("""
+    <div class="info-card">
+        <h3>🏥 Sobre SyncSalud</h3>
+        <p>SyncSalud es una plataforma innovadora diseñada para transformar la gestión clínica y hospitalaria. 
+        Nuestra misión es optimizar la eficiencia de las consultas médicas, reducir los tiempos de espera y 
+        digitalizar la historia clínica de los pacientes, garantizando su preservación en el tiempo y su acceso ágil y seguro.</p>
+        <h4>✨ Beneficios clave:</h4>
+        <ul>
+            <li>Gestión digital de historias clínicas</li>
+            <li>Prescripción electrónica de medicamentos</li>
+            <li>Acceso rápido a información crítica del paciente</li>
+            <li>Reducción del 40% en tiempos administrativos</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
             
             # Sección de contacto
-        st.markdown("""
-            <div class="contact-card">
-                <h3>📞 ¿Necesitas ayuda?</h3>
-                <p>Nuestro equipo de soporte está siempre disponible para asistirte:</p>
-                <p>📧 Email:</strong> soporte@syncsalud.com</p>
-                <p>☎️ Teléfono:</strong> +54 11 1234-5678</p>
-                <p>💬 WhatsApp:</strong> +54 9 11 5678-9012</p>
-                <p>🕐 Horario:</strong> Lunes a Viernes, 8:00 - 20:00</p>
-            </div>
-        """, unsafe_allow_html=True)
+    st.markdown("""
+        <div class="contact-card">
+            <h3>📞 ¿Necesitas ayuda?</h3>
+            <p>Nuestro equipo de soporte está siempre disponible para asistirte:</p>
+            <p>📧 Email:</strong> soporte@syncsalud.com</p>
+            <p>☎️ Teléfono:</strong> +54 11 1234-5678</p>
+            <p>💬 WhatsApp:</strong> +54 9 11 5678-9012</p>
+            <p>🕐 Horario:</strong> Lunes a Viernes, 8:00 - 20:00</p>
+        </div>
+    """, unsafe_allow_html=True)
     
     # Gráfico de mejora en la eficacia
     st.markdown("### 📊 Impacto de SyncSalud en la Eficiencia Médica")
