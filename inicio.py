@@ -4,7 +4,8 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 import pandas as pd
-from functions import execute_query, add_user
+from functions import execute_query, add_user, autenticar_usuario, buscar_rol, verificar_medico_por_dni, obtener_dni_por_usuario
+from functions import get_connection
 
 #pip install streamlit plotly pandas
 load_dotenv()
@@ -17,6 +18,7 @@ import plotly.graph_objects as go
 import time
 
 # Configuración de la página
+
 st.set_page_config(
     page_title="SyncSalud - Login",
     page_icon="🏥",
@@ -44,10 +46,10 @@ st.markdown("""
         box-shadow: 0 5px 10px rgba(0,0,0,0.2);
     }
     .login-container {
-        background-color: white;
-        padding: 2rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        background-color: transparent; /* Cambiar a transparente para quitar el cuadrado blanco */
+        padding: 0; /* Quitar padding */
+        border-radius: 0; /* Quitar border-radius */
+        box-shadow: none; /* Quitar sombra */
     }
     .info-card {
         background-color: #e3f2fd;
@@ -65,6 +67,140 @@ st.markdown("""
         margin-bottom: 5px;
         padding-left: 5px;
     }
+    .guide-container {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin: 1rem 0;
+    }
+    
+    .guide-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .guide-icon {
+        font-size: 2rem;
+        margin-right: 10px;
+    }
+    
+    .guide-title {
+        margin: 0;
+        color: #1a73e8;
+        font-size: 1.8rem;
+    }
+    
+    .guide-description {
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 20px;
+        color: #333;
+    }
+    
+    .info-section {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .info-title {
+        color: #495057;
+        margin-bottom: 15px;
+        font-size: 1.2rem;
+    }
+    
+    .info-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .info-item {
+        padding: 8px 0;
+        display: flex;
+        align-items: center;
+        font-size: 15px;
+    }
+    
+    .item-icon {
+        margin-right: 10px;
+        font-size: 1.1rem;
+    }
+    
+    .gravity-levels {
+        margin-top: 15px;
+    }
+    
+    .level-5 {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .level-4 {
+        background: linear-gradient(135deg, #fd7e14, #e8590c);
+        color: white;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .level-3 {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        color: #212529;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .level-2 {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .level-1 {
+        background: linear-gradient(135deg, #28a745, #1e7e34);
+        color: white;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .level-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .level-description {
+        font-size: 13px;
+        opacity: 0.9;
+    }
+    
+    .tip-section {
+        background-color: #e3f2fd;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #2196f3;
+        margin-top: 20px;
+    }
+    
+    .tip-text {
+        margin: 0;
+        font-style: italic;
+        color: #1976d2;
+    }
     .contact-card {
         background-color: #fff3e0;
         padding: 1.5rem;
@@ -73,8 +209,12 @@ st.markdown("""
         border-left: 4px solid #ff9800;
     }
     .logo-container {
-        text-align: center;
+        text-align: center; /* Centrar el logo */
         margin-bottom: 2rem;
+    }
+    .auth-button-container {
+        text-align: center; /* Centrar el botón */
+        margin-bottom: 1rem;
     }
     .welcome-text {
         text-align: center;
@@ -83,18 +223,46 @@ st.markdown("""
         font-weight: bold;
         margin-bottom: 1rem;
     }
+    .guide-container {
+        background-color: #f3e8ff;
+        padding: 20px;
+        border-radius: 12px;
+        font-family: sans-serif;
+        color: #333;
+    }
+    .guide-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .guide-icon {
+        font-size: 32px;
+        margin-right: 10px;
+    }
+    .level-5, .level-4, .level-3, .level-2, .level-1 {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 8px;
+    }
+    .level-5 { background-color: #f8d7da; }
+    .level-4 { background-color: #fff3cd; }
+    .level-3 { background-color: #d1ecf1; }
+    .level-2 { background-color: #d4edda; }
+    .level-1 { background-color: #e2e3e5; }
 </style>
 """, unsafe_allow_html=True)
 
 # Función para generar el logo (SVG)
 def crear_logo():
     return """
-    <svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="10" y="10" width="40" height="40" rx="10" fill="#1a73e8"/>
-        <path d="M25 25 L25 35 L35 35 M25 30 L30 30" stroke="white" stroke-width="3" stroke-linecap="round"/>
-        <text x="60" y="40" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#1a73e8">SyncSalud</text>
+    <svg width="300" height="80" viewBox="0 0 300 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="15" width="50" height="50" rx="12" fill="#1a73e8"/>
+        <path d="M30 30 L30 45 L45 45 M30 37.5 L37.5 37.5" stroke="white" stroke-width="4" stroke-linecap="round"/>
+        <text x="75" y="55" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#1a73e8">SyncSalud</text>
     </svg>
     """
+
+
 
 # Simulación de funciones de base de datos
 def manage_page_access():
@@ -142,6 +310,7 @@ def manage_page_access():
     # Notificar a Streamlit que debe recargar la configuración
     st.rerun()
 
+
 # Inicializa estado de sesión
 if "auth_mode" not in st.session_state:
     st.session_state.auth_mode = "Login"
@@ -149,26 +318,28 @@ if "auth_mode" not in st.session_state:
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
+if "rol" not in st.session_state:
+    st.session_state.rol = None
+
 # Página de Login/Registro
 if not st.session_state.logged_in:
-    # Logo en la parte superior
+    # Logo en la parte superior (ahora alineado a la izquierda)
     st.markdown(f'<div class="logo-container">{crear_logo()}</div>', unsafe_allow_html=True)
     
-    # Contenedor de login
+    # Contenedor de login (sin fondo blanco)
     st.markdown('<div class="login-container">', unsafe_allow_html=True)
     
-    # Botón para cambiar entre Login y Sign Up
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.session_state.auth_mode == "Login":
-            if st.button("¿No tienes cuenta? Regístrate aquí", key="switch_to_signup"):
-                st.session_state.auth_mode = "Sign Up"
-                st.rerun()
-        else:
-            if st.button("¿Ya tienes cuenta? Inicia sesión aquí", key="switch_to_login"):
-                st.session_state.auth_mode = "Login"
-                st.rerun()
-    
+    # Botón para cambiar entre Login y Sign Up (alineado a la izquierda)
+    st.markdown('<div class="auth-button-container">', unsafe_allow_html=True)
+    if st.session_state.auth_mode == "Login":
+        if st.button("¿No tienes cuenta? Regístrate aquí", key="switch_to_signup"):
+            st.session_state.auth_mode = "Sign Up"
+            st.rerun()
+    else:
+        if st.button("¿Ya tienes cuenta? Inicia sesión aquí", key="switch_to_login"):
+            st.session_state.auth_mode = "Login"
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
     # Formulario de LOGIN
     if st.session_state.auth_mode == "Login":
         st.markdown("### 🔐 Iniciar sesión")
@@ -181,13 +352,23 @@ if not st.session_state.logged_in:
                 if len(password) < 8 or " " in password:
                     st.error("La contraseña debe tener 8 o más caracteres y no debe contener espacios")
                 elif username and password:
-                    # Simulación de login exitoso
-                    st.session_state.logged_in = True
-                    st.session_state.username = username
-                    st.session_state.rol = "Medico"  # Ejemplo
-                    st.success("¡Inicio de sesión exitoso!")
-                    time.sleep(1)
-                    st.rerun()
+                    if username and password:
+                        resultado = autenticar_usuario(username, password)
+                        if resultado['success']:
+                            buscar_dni = obtener_dni_por_usuario(username)
+                            saber_rol = buscar_rol(username, password)
+                            if buscar_dni["success"]:
+                                dni = buscar_dni["dni"]
+                                rol = saber_rol["message"]
+                                st.session_state.logged_in = True
+                                st.session_state.username = username
+                                st.session_state.dni = dni
+                                st.session_state.rol = rol
+                                st.success("¡Inicio de sesión exitoso!")
+                                time.sleep(1)
+                                st.rerun()
+                        else:
+                            st.error(resultado['message'])
                 else:
                     st.error("Por favor completa ambos campos.")
     
@@ -201,22 +382,48 @@ if not st.session_state.logged_in:
             confirm_pass = st.text_input("🔑 Confirmar contraseña", type="password")
             rol = st.radio("👥 Selecciona tu rol:", ["Medico", "Admisiones"])
             submitted = st.form_submit_button("Registrarse")
-            
-            if submitted:
-                if not all([id_user, new_user, new_pass, confirm_pass]):
-                    st.error("Completa todos los campos.")
-                elif " " in new_user:
-                    st.error("El nombre de usuario no puede contener espacios")
-                elif new_pass != confirm_pass:
-                    st.error("Las contraseñas no coinciden.")
-                elif len(new_pass) < 8 or " " in new_pass:
-                    st.error("La contraseña debe tener 8 o más caracteres y no debe contener espacios")
+            if rol == "Médico":
+                respuesta = verificar_medico_por_dni(id_user)
+                if respuesta:
+                    if submitted:
+                        if not all([id_user, new_user, new_pass, confirm_pass]):
+                            st.error("Completa todos los campos.")
+                        elif " " in new_user:
+                            st.error("El nombre de usuario no puede contener espacios")
+                        elif new_pass != confirm_pass:
+                            st.error("Las contraseñas no coinciden.")
+                        elif len(new_pass) < 8 or " " in new_pass:
+                            st.error("La contraseña debe tener 8 o más caracteres y no debe contener espacios")
+                        else:
+                            nueva_cuenta= add_user(id_user, new_user, new_pass, rol)
+                            if nueva_cuenta:
+                                st.success("¡Usuario registrado con éxito! Ahora puedes iniciar sesión.")
+                                st.session_state.auth_mode = "Login"
+                                time.sleep(1)
+                                st.rerun()
+                            else:
+                                st.error("Ocurrió un error, intente nuevamente")
                 else:
-                    # Simulación de registro exitoso
-                    st.success("¡Usuario registrado con éxito! Ahora puedes iniciar sesión.")
-                    st.session_state.auth_mode = "Login"
-                    time.sleep(1)
-                    st.rerun()
+                    st.error("No se encuentra registrado en la base de datos")
+            else:
+                if submitted:
+                    if not all([id_user, new_user, new_pass, confirm_pass]):
+                        st.error("Completa todos los campos.")
+                    elif " " in new_user:
+                        st.error("El nombre de usuario no puede contener espacios")
+                    elif new_pass != confirm_pass:
+                        st.error("Las contraseñas no coinciden.")
+                    elif len(new_pass) < 8 or " " in new_pass:
+                        st.error("La contraseña debe tener 8 o más caracteres y no debe contener espacios")
+                    else:
+                        nueva_cuenta= add_user(id_user, new_user, new_pass, rol)
+                        if nueva_cuenta:
+                            st.success("¡Usuario registrado con éxito! Ahora puedes iniciar sesión.")
+                            st.session_state.auth_mode = "Login"
+                            time.sleep(1)
+                            st.rerun()
+                        else:
+                            st.error("Ocurrió un error, intente nuevamente")
     
     st.markdown('</div>', unsafe_allow_html=True)
     st.warning("🔒 Todas las páginas están bloqueadas hasta que inicies sesión.")
@@ -250,8 +457,180 @@ if st.session_state.get("logged_in"):
             st.rerun()
     # Mensaje de bienvenida personalizado
     st.markdown(f'<div class="welcome-text">¡Bienvenido a SyncSalud, {st.session_state.username}! 👋</div>', unsafe_allow_html=True)
-    
-    # Información sobre la empresa
+    if st.session_state.rol == "Medico":
+        st.markdown("""
+        <div style="
+            background-color: #e0f7fa;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 6px solid #00acc1;
+            margin-bottom: 20px;
+            font-family: sans-serif;
+        ">
+            <h4 style="margin-top: 0;">¿Es tu primera vez usando la plataforma?</h4>
+            <p style="margin-bottom: 10px;">
+                <strong>No te preocupes</strong> te preparamos una guía rápida sobre las distintas secciones disponibles para el personal médico. Seleccioná una página para conocer qué podés hacer en ella.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        page_analisis = st.selectbox("📂 Seleccioná una sección para explorar su función", 
+                                 ["", "Consultas médicas", "Estudios", "Medicamentos"])
+        if page_analisis == "Consultas médicas":
+            st.markdown("""
+        <div class="guide-container">
+            <div class="guide-header">
+                <div class="guide-icon">🏥</div>
+                <h3>Consultas médicas</h3>
+            </div>  
+            <p>
+                En esta página podrás <strong>visualizar consultas médicas pasadas</strong> o <strong>agregar una consulta actual</strong> 
+                del paciente utilizando su número de DNI.
+            </p>
+            <div>
+                <h4>📊 Información obtenida en cada consulta:</h4>
+                <ul style="font-size:14px;">
+                    <li>📅 <strong>Fecha</strong></li>
+                    <li>👨‍⚕️ <strong>Médico</strong></li>
+                    <li>🎯 <strong>Especialidad del profesional</strong></li>
+                    <li>🏥 <strong>Hospital</strong></li>
+                    <li>📝 <strong>Breve detalle de la consulta</strong></li>
+                    <li>⚠️ <strong>Escala de gravedad:</strong>
+                        <div class="level-5">
+                            <strong>🚨 Nivel 5: RESUCITACIÓN</strong><br>
+                            Paciente en estado crítico, con riesgo vital inmediato que requiere atención médica inmediata y reanimación.
+                        </div>
+                        <div class="level-4">
+                            <strong>🔥 Nivel 4: EMERGENCIA</strong><br>
+                            Paciente con riesgo vital inminente, pero que requiere atención médica dentro de 15 minutos.
+                        </div>
+                        <div class="level-3">
+                            <strong>⚡ Nivel 3: URGENTE</strong><br>
+                            Paciente que necesita atención médica en un plazo de 30 minutos a 1 hora.
+                        </div>
+                        <div class="level-2">
+                            <strong>📋 Nivel 2: POCO URGENTE</strong><br>
+                            Puede esperar hasta 2 horas sin riesgo para la vida.
+                        </div>
+                        <div class="level-1">
+                            <strong>✅ Nivel 1: NO URGENTE</strong><br>
+                            Situación no urgente, puede ser atendida más adelante.
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        elif page_analisis == "Estudios":
+            st.markdown("""
+        <div class="guide-container">
+            <div class="guide-header">
+                <div class="guide-icon">🏥</div>
+                <h3>Estudios</h3>
+            </div>  
+            <p>
+                En esta página podrás <strong>visualizar estudios médicos pasados</strong> o <strong>agregar un estudio nuevo</strong> 
+                del paciente utilizando su número de DNI.
+            </p>
+            <div>
+                <h4>📊 Información obtenida en cada estudios:</h4>
+                <ul style="font-size:14px;">
+                    <li>📅 <strong>Fecha</strong></li>
+                    <li>👨‍⚕️ <strong>Médico</strong></li>
+                    <li>🎯 <strong>Especialidad del profesional</strong></li>
+                    <li>🏥 <strong>Hospital</strong></li>
+                    <li>📋 <strong>Categoria del estudio</strong></li>
+                    <li>🔎 <strong>Estudio</strong></li>
+                    <li>📝 <strong>Observaciones realizadas</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        elif page_analisis == "Medicamentos":
+            st.markdown("""
+        <div class="guide-container">
+            <div class="guide-header">
+                <div class="guide-icon">🏥</div>
+                <h3>Medicamentos</h3>
+            </div>  
+            <p>
+                En esta página podrás <strong>visualizar medicamentos recetados</strong> del paciente o <strong>recetar medicamentos nuevos</strong>
+                utilizando su número de DNI.
+            </p>
+            <div>
+                <h4>📊 Información obtenida en cada estudios:</h4>
+                <ul style="font-size:14px;">
+                    <li>👨‍⚕️ <strong>Médico</strong></li>
+                    <li>💊 <strong>Medicamento recetado</strong></li>
+                    <li>📋 <strong>Tipo de medicamento</strong></li>
+                    <li>📝 <strong>Indicaciones</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+            # Información sobre la empresa
+    else:
+        st.markdown("""
+        <div style="
+            background-color: #e0f7fa;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 6px solid #00acc1;
+            margin-bottom: 20px;
+            font-family: sans-serif;
+        ">
+            <h4 style="margin-top: 0;">¿Es tu primera vez usando la plataforma?</h4>
+            <p style="margin-bottom: 10px;">
+                <strong>No te preocupes</strong> te preparamos una guía rápida sobre la sección disponibles para el personal administrativo. En la  pestaña "Administración" podrás <strong>agregar pacientes</strong> o <strong>agregar médicos</strong> 
+                a la base de datos. Elige una opción para aprender más de la funcionalidad de la página.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        page_analisis = st.selectbox("📂 Seleccioná una sección para explorar su función",["", "Médico", "Paciente"])
+        if page_analisis == "Médico":
+            st.markdown("""
+        <div class="guide-container">
+            <div class="guide-header">
+                <div class="guide-icon">🏥</div>
+                <h3>Médicos</h3>
+            </div>  
+            <div>
+                <h4>📊 Información necesaria para agregar un médico:</h4>
+                <ul style="font-size:14px;">
+                    <li>🪪 <strong>DNI</strong></li>
+                    <li>👤 <strong>Nombre y apellidoo</strong></li>
+                    <li>📋 <strong>Licencia</strong></li>
+                    <li>🩺 <strong>Especialidad del médico</strong></li>
+                    <li>🏥 <strong>Hospital</strong>
+                    </li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+                
+        elif page_analisis == "Paciente":
+            st.markdown("""
+        <div class="guide-container">
+            <div class="guide-header">
+                <div class="guide-icon">🏥</div>
+                <h3>Paciente</h3>
+            </div>  
+            <div>
+                <h4>📊 Información necesario para agregar un paciente:</h4>
+                <ul style="font-size:14px;">
+                    <li>🪪 <strong>DNI</strong></li>
+                    <li>👤 <strong>Nombre y apellidoo</strong></li>
+                    <li>📋 <strong>Obra socialo</strong></li>
+                    <li>📅 <strong>Fecha de nacimientoo</strong></li>
+                    <li>❔ <strong>Sexo</strong></li>
+                    <li>📱 <strong>Teléfono</strong></li>
+                    <li>🚨 <strong>Contacto de emrgencia</strong></li>
+                    <li>🩸 <strong>Grupo sanguíneo</strong>
+                    </li>
+                </ul>
+             </div>
+            """, unsafe_allow_html=True)
+       
     st.markdown("""
     <div class="info-card">
         <h3>🏥 Sobre SyncSalud</h3>
@@ -267,17 +646,17 @@ if st.session_state.get("logged_in"):
         </ul>
     </div>
     """, unsafe_allow_html=True)
-    
-    # Sección de contacto
+            
+            # Sección de contacto
     st.markdown("""
-    <div class="contact-card">
-        <h3>📞 ¿Necesitas ayuda?</h3>
-        <p>Nuestro equipo de soporte está siempre disponible para asistirte:</p>
-        <p><strong>📧 Email:</strong> soporte@syncsalud.com</p>
-        <p><strong>☎️ Teléfono:</strong> +54 11 1234-5678</p>
-        <p><strong>💬 WhatsApp:</strong> +54 9 11 5678-9012</p>
-        <p><strong>🕐 Horario:</strong> Lunes a Viernes, 8:00 - 20:00</p>
-    </div>
+        <div class="contact-card">
+            <h3>📞 ¿Necesitas ayuda?</h3>
+            <p>Nuestro equipo de soporte está siempre disponible para asistirte:</p>
+            <p>📧 Email:</strong> soporte@syncsalud.com</p>
+            <p>☎️ Teléfono:</strong> +54 11 1234-5678</p>
+            <p>💬 WhatsApp:</strong> +54 9 11 5678-9012</p>
+            <p>🕐 Horario:</strong> Lunes a Viernes, 8:00 - 20:00</p>
+        </div>
     """, unsafe_allow_html=True)
     
     # Gráfico de mejora en la eficacia

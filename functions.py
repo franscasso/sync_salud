@@ -97,6 +97,64 @@ def execute_query(query, params= None, conn=None, is_select=True):
         if conn and not is_select:
             conn.rollback()
         return pd.DataFrame() if is_select else False
+    
+def execute_query_simple(query, params=None, is_select=True):
+    """
+    Versión simplificada que siempre maneja su propia conexión.
+    """
+    try:
+        # Crear conexión
+        conn = connect_to_supabase()
+        cursor = conn.cursor()
+        
+        # Ejecutar query
+        if params:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
+        
+        if is_select:
+            # Para SELECT queries
+            results = cursor.fetchall()
+            
+            # Obtener nombres de columnas
+            if cursor.description:
+                colnames = [desc[0] for desc in cursor.description]
+                
+                # Crear DataFrame
+                if results:
+                    df = pd.DataFrame(results, columns=colnames)
+                else:
+                    # DataFrame vacío pero con columnas
+                    df = pd.DataFrame(columns=colnames)
+                
+                cursor.close()
+                conn.close()
+                return df
+            else:
+                cursor.close()
+                conn.close()
+                return pd.DataFrame()
+        else:
+            # Para INSERT/UPDATE/DELETE
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+            
+    except Exception as e:
+        print(f"Error executing query: {e}")
+        try:
+            if 'cursor' in locals():
+                cursor.close()
+            if 'conn' in locals():
+                if not is_select:
+                    conn.rollback()
+                conn.close()
+        except:
+            pass
+        
+        return pd.DataFrame() if is_select else False
 
 def add_user(dni, nombre_usuario, contraseña, rol):
     """
@@ -111,4 +169,204 @@ def add_user(dni, nombre_usuario, contraseña, rol):
     return execute_query(query, params=params, is_select=False)
 
 connect_to_supabase()
+
+def get_connection():
+    return psycopg2.connect(
+        host="aws-0-us-east-1.pooler.supabase.com",
+        database="postgres",
+        user="postgres.oubnxmdpdosmyrorjiqp",
+        password="$EB6Y5rbR#z8_qh",
+        port="5432"
+    )
+
+
+def autenticar_usuario(nombre_usuario, contraseña):
+    """
+    Verifica si el usuario existe y si la contraseña es correcta.
+
+    Args:
+        nombre_usuario (str): El nombre de usuario ingresado.
+        contraseña (str): La contraseña ingresada.
+
+    Returns:
+        dict: {'success': bool, 'message': str}
+    """
+    query = "SELECT contraseña FROM users WHERE nombre_usuario = %s"
+    params = (nombre_usuario,)
+    resultado = execute_query_simple(query, params=params, is_select=True)
+
+    if resultado.empty:
+        return {'success': False, 'message': 'El usuario no existe.'}
+    
+    contraseña_en_bd = resultado.iloc[0]['contraseña']
+    
+    if contraseña == contraseña_en_bd:
+        return {'success': True, 'message': f'Bienvenido, {nombre_usuario}!'}
+    else:
+        return {'success': False, 'message': 'Contraseña incorrecta.'}
+
+def buscar_rol(nombre_usuario, contraseña):
+    """
+    Devuelve el rol de un usuario si las credenciales son correctas.
+
+    Args:
+        nombre_usuario (str): Nombre de usuario ingresado.
+        contraseña (str): Contraseña ingresada.
+
+    Returns:
+        dict: {'success': bool, 'rol': str or None, 'message': str}
+    """
+    query = "SELECT contraseña, rol FROM users WHERE nombre_usuario = %s"
+    params = (nombre_usuario,)  
+    resultado = execute_query_simple(query, params=params, is_select=True)
+
+    if resultado.empty:
+        return {'success': False, 'rol': None, 'message': 'El usuario no existe.'}
+
+    contraseña_en_bd = resultado.iloc[0]['contraseña']
+    rol_en_bd = resultado.iloc[0]['rol']
+
+    if contraseña == contraseña_en_bd:
+        return {'success': True, 'rol': rol_en_bd, 'message': f"{rol_en_bd}"}
+    
+    
+
+
+
+def obtener_dni_por_usuario(nombre_usuario):
+    """
+    Devuelve el DNI (columna 'id') de un usuario a partir de su nombre de usuario.
+
+    Args:
+        nombre_usuario (str): Nombre de usuario registrado en la tabla 'users'.
+
+    Returns:
+        dict: {'success': bool, 'dni': str or None, 'message': str}
+    """
+    query = "SELECT id FROM users WHERE nombre_usuario = %s"
+    params = (nombre_usuario,)
+    resultado = execute_query_simple(query, params=params, is_select=True)
+
+    if resultado.empty:
+        return {
+            'success': False,
+            'dni': None,
+            'message': 'No se encontró ningún usuario con ese nombre.'
+        }
+
+    dni = resultado.iloc[0]['id']
+    return {
+        'success': True,
+        'dni': f"{dni}",
+        'message': f"El DNI del usuario '{nombre_usuario}' es {dni}."
+    }
+
+def verificar_medico_por_dni(dni):
+    """
+    Verifica si un médico existe por su DNI y retorna formato diccionario.
+
+    Args:
+        dni (str or int): DNI del médico.
+
+    Returns:
+        dict: {'success': bool, 'message': str}
+    """
+    query = "SELECT COUNT(*) as total FROM medicos WHERE dni = %s"
+    params = (dni,)
+    resultado = execute_query_simple(query, params=params, is_select=True)
+
+    print(resultado)
+
+    if resultado.empty:
+        return False
+    
+    count = resultado.iloc[0]['total']
+
+    print(count)
+    
+    if count > 0:
+        return True
+    else:
+        return False
+
+def obtener_hospital_por_dni_medico(dni):
+    """
+    Obtiene el ID del hospital al que pertenece un médico por su DNI.
+
+    Args:
+        dni (str or int): DNI del médico.
+
+    Returns:
+        dict: {'success': bool, 'id_hospital': int or None, 'message': str}
+    """
+    query = "SELECT id_hospital FROM medicos WHERE dni = %s"
+    params = (dni,)
+    resultado = execute_query_simple(query, params=params, is_select=True)
+
+    if resultado.empty:
+        return {
+            'success': False,
+            'id_hospital': None,
+            'message': 'No se encontró ningún médico con ese DNI.'
+        }
+
+    id_hospital = resultado.iloc[0]['id_hospital']
+    return {
+        'success': True,
+        'id_hospital': id_hospital,
+        'message': f'Médico encontrado. Pertenece al hospital ID: {id_hospital}'
+    }
+
+def obtener_id_categoria_por_dni_medico(dni):
+    """
+    Obtiene el ID de categoria que tiene un médico
+
+    Args:
+        dni (str or int): DNI del médico.
+
+    Returns:
+        dict: {'success': bool, 'id_categoria': int or None, 'message': str}
+    """
+    query = "SELECT id_categoria FROM medicos WHERE dni = %s"
+    params = (dni,)
+    resultado = execute_query_simple(query, params=params, is_select=True)
+
+    if resultado.empty:
+        return {
+            'success': False,
+            'id_hospital': None,
+            'message': 'No se encontró ningún médico con ese DNI.'
+        }
+
+    id_categoria =  resultado.iloc[0]['id_categoria']
+    return {
+        'success': True,
+        'id_categoria': id_categoria
+    }
+
+def obtener_categoria_por_id(id_tipo_categoria):
+    """
+    Obtiene categoria con el ID
+
+    Args:
+        dni (str or int): id_tipo_categoria
+
+    Returns:
+        dict: {'success': bool, 'nombre_categoria':str or None, 'message': str}
+    """
+    query = "SELECT nombre_categoria FROM categorias WHERE id_tipo_categoria = %s"
+    params = (id_tipo_categoria,)
+    resultado = execute_query_simple(query, params=params, is_select=True)
+
+    if resultado.empty:
+        return {
+            'success': False,
+            'nombre_categoria': None
+        }
+
+    nombre_categoria = resultado.iloc[0]['nombre_categoria']
+    return {
+        'success': True,
+        'nombre_categoria': nombre_categoria
+    }
 
