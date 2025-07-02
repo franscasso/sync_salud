@@ -1,0 +1,11 @@
+streamlit
+supabase
+pandas
+numpy
+python-dotenv
+os
+dotenv
+psycopg2
+plotly.expres
+datetime
+psycopg2.extras
