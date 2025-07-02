@@ -1,7 +1,9 @@
 import streamlit as st
 import pandas as pd
 from psycopg2.extras import RealDictCursor
-from functions import get_connection, execute_query, obtener_id_categoria_por_dni_medico, obtener_categoria_por_id
+from functions import get_connection, execute_query
+import os
+from Inicio import crear_logo, manage_page_access
 
 # --- Fix visual para texto blanco en fondo blanco dentro de expanders ---
 st.markdown("""
@@ -115,13 +117,12 @@ def obtener_id_medico_por_dni(dni):
     }
 
 
-
 # -- INTERFAZ --
 
 if not st.session_state.get("logged_in", False):
     st.error("Debes iniciar sesión para acceder a esta página")
 else:
-    if st.session_state.get("rol", "") != "Medico":
+    if st.session_state.get("rol", "") != "Médico":
         st.error("No tienes acceso a esta página")
     else:
         st.title("🩺 Consultas médicas")
@@ -144,18 +145,18 @@ else:
                     else:
                         st.dataframe(df_historial[["Fecha Consulta", "Especialidad", "Detalle Consulta", "Gravedad"]])
 
-                        st.markdown("### 🗂️ Detalles adicionales por consulta")
+                        st.markdown("### 🗂 Detalles adicionales por consulta")
                         for idx, row in df_historial.iterrows():
-                            with st.expander(f"🗓️ {row['Fecha Consulta']} | Gravedad: {row['Gravedad']}"):
-                                st.write(f"*👩‍⚕️ Médico:* {row['Médico']}")
-                                st.write(f"*🏥 Hospital:* {row['Hospital']}")
-                                st.write(f"*🩻 Detalle:* {row['Detalle Consulta']}")
-                                st.write(f"*📚 Especialidad:* {row['Especialidad']}")
-                                st.write(f"*📅 Fecha:* {row['Fecha Consulta']}")
-                                st.write(f"*⚠️ Gravedad:* {row['Gravedad']}")
+                            with st.expander(f"🗓 {row['Fecha Consulta']} | Gravedad: {row['Gravedad']}"):
+                                st.write(f"👩‍⚕ Médico: {row['Médico']}")
+                                st.write(f"🏥 Hospital: {row['Hospital']}")
+                                st.write(f"🩻 Detalle: {row['Detalle Consulta']}")
+                                st.write(f"📚 Especialidad: {row['Especialidad']}")
+                                st.write(f"📅 Fecha: {row['Fecha Consulta']}")
+                                st.write(f"⚠ Gravedad: {row['Gravedad']}")
 
         elif opcion == "➕ Agregar consulta":
-            st.markdown("## ➕ Nueva consulta médica")
+            st.title("➕ Nueva consulta médica")
 
             dni_medico = st.session_state.dni  # Este valor debería venir del login
             buscar_id_medico = obtener_id_medico_por_dni(dni_medico)
@@ -176,7 +177,7 @@ else:
 
                 col1, col2 = st.columns(2)
                 with col1:
-                    gravedad = st.slider("⚠️ Gravedad (1=leve, 5=crítico)", 1 ,5, 3)
+                    gravedad = st.slider("⚠ Gravedad (1=leve, 5=crítico)", 1, 5, 3)
                 with col2:
                     fecha_consulta = st.date_input("📅 Fecha de la consulta")
 
@@ -186,7 +187,7 @@ else:
 
                 if enviar:
                     try:
-                        id_paciente = int(paciente_sel.split(" - ")[0])
+                        id_paciente = paciente_sel.split(" - ")[0]
                         id_hospital = int(hospital_sel.split(" - ")[0])
                         id_categoria = int(categoria_sel.split(" - ")[0])
 
@@ -194,3 +195,31 @@ else:
                         st.success("✅ Consulta médica agregada correctamente.")
                     except Exception as e:
                         st.error(f"❌ Error al guardar la consulta: {e}")
+
+
+if st.session_state.get("logged_in"):
+    # Sidebar con información del usuario
+    with st.sidebar:
+        st.markdown(f'<div class="logo-container">{crear_logo()}</div>', unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown(f"👤 Usuario:** {st.session_state.username}")
+        st.markdown(f"👥 Rol:** {st.session_state.rol}")
+        st.markdown("---")
+        
+        # Mostrar información sobre páginas accesibles
+        if st.session_state.rol == "Médico":
+            st.success("✅ Tienes acceso a: Consultas médicas, Estudios, Medicamentos e Historial clínico")
+            st.error("❌ No tienes acceso a: Administración")
+        elif st.session_state.rol == "Admisiones":
+            st.success("✅ Tienes acceso a: Administración")
+            st.error("❌ No tienes acceso a: Consultas médicas, Estudios, Medicamentos e Historial clínico")
+        
+        st.markdown("---")
+        if st.button("🚪 Cerrar sesión"):
+            # Restablecer estado y bloquear páginas
+            st.session_state.clear()
+            try:
+                manage_page_access()
+            except:
+                pass
+            st.rerun()

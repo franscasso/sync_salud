@@ -1,428 +1,279 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, date
-import supabase
-from typing import Optional, List, Dict, Any
+from psycopg2.extras import RealDictCursor
+from functions import get_connection, execute_query
+import os
+from Inicio import crear_logo, manage_page_access
+from datetime import date
 
-# Verificar autenticación
-if not st.session_state.logged_in:
+# --- Fix visual para texto blanco en fondo blanco dentro de expanders ---
+st.markdown("""
+    <style>
+    .streamlit-expanderContent {
+        color: black !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+def obtener_pacientes():
+    """
+    Obtiene lista de pacientes con DNI y nombre
+    """
+    query = "SELECT dni_paciente, nombre FROM pacientes"
+    resultado = execute_query(query, is_select=True)
+    return [(row['dni_paciente'], row['nombre']) for _, row in resultado.iterrows()]
+
+def obtener_hospitales():
+    """
+    Obtiene lista de hospitales
+    """
+    query = "SELECT id_hospital, nombre_hospital FROM hospital"
+    resultado = execute_query(query, is_select=True)
+    return [(row['id_hospital'], row['nombre_hospital']) for _, row in resultado.iterrows()]
+
+def obtener_categorias_estudio():
+    """
+    Obtiene categorías de estudios
+    """
+    query = "SELECT id_categoria_estudio, tipo_de_estudio FROM tipo_estudio"
+    resultado = execute_query(query, is_select=True)
+    return [(row['id_categoria_estudio'], row['tipo_de_estudio']) for _, row in resultado.iterrows()]
+
+def obtener_estudios_por_categoria(categoria_id):
+    """
+    Obtiene estudios específicos por categoría
+    """
+    query = "SELECT id_estudio, nombre_estudio FROM estudios WHERE tipo_estudio = %s"
+    resultado = execute_query(query, params=(categoria_id,), is_select=True)
+    return [(row['id_estudio'], row['nombre_estudio']) for _, row in resultado.iterrows()]
+
+def obtener_id_medico_por_dni(dni):
+    """
+    Obtiene el ID del médico por su DNI
+    """
+    query = "SELECT id_medico FROM medicos WHERE dni = %s"
+    resultado = execute_query(query, params=(dni,), is_select=True)
+    
+    if resultado.empty:
+        return {
+            'success': False,
+            'id_medico': None,
+            'message': 'No se encontró ningún médico con ese DNI.'
+        }
+    
+    id_medico = int(resultado.iloc[0]['id_medico'])
+    return {
+        'success': True,
+        'id_medico': id_medico,
+        'message': 'ID del médico encontrado correctamente.'
+    }
+
+def insertar_estudio(dni_paciente, id_medico, id_hospital, id_categoria_estudio, id_estudio, fecha, observaciones):
+    """
+    Inserta nuevo estudio en la base de datos
+    """
+    query = """
+        INSERT INTO estudios_realizados 
+        (dni_paciente, id_medico, id_hospital, id_categoria_estudio, id_estudio, fecha, observaciones)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """
+    
+    try:
+        execute_query(query, params=(dni_paciente, id_medico, id_hospital, id_categoria_estudio, id_estudio, fecha, observaciones))
+        return True
+    except Exception as e:
+        st.error(f"Error al insertar estudio: {str(e)}")
+        return False
+
+# -- INTERFAZ --
+
+if not st.session_state.get("logged_in", False):
     st.error("Debes iniciar sesión para acceder a esta página")
 else:
-    if st.session_state.rol != "Medico":
+    if st.session_state.get("rol", "") != "Médico":
         st.error("No tienes acceso a esta página")
     else:
-        # Configuración de la página
-        st.set_page_config(
-            page_title="Sistema Médico - Estudios",
-            page_icon="🏥",
-            layout="wide"
-        )
+        st.title("🔬 Estudios médicos")
+        st.markdown("### ¿Qué acción desea realizar?")
 
-        # Inicializar cliente de Supabase
-        @st.cache_resource
-        def init_supabase():
-            url = "https://oubnxmdpdosmyrorjiqp.supabase.co"
-            key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91Ym54bWRwZG9zbXlyb3JqaXFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4MjUzMjcsImV4cCI6MjA2MDQwMTMyN30.4yszlmTe3NkDLAss6HACnfGlxprHyJLQYTLRrgRmj04"
-            return supabase.create_client(url, key)
+        opcion = st.radio("Seleccione operación", ("📄 Ver estudios", "➕ Agregar estudio"))
 
-        # Funciones para obtener datos
-        @st.cache_data(ttl=300)  # Cache por 5 minutos
-        def get_patient_by_dni(dni: str) -> Optional[Dict]:
-            """Buscar paciente por DNI"""
-            try:
-                client = init_supabase()
-                response = client.table('pacientes').select('*').eq('dni_paciente', dni).execute()
-                return response.data[0] if response.data else None
-            except Exception as e:
-                st.error(f"Error al buscar paciente: {str(e)}")
-                return None
+        if opcion == "📄 Ver estudios":
+            with st.form("form_estudios"):
+                dni_paciente = st.text_input("🆔 DNI del paciente")
+                btn_buscar = st.form_submit_button("🔍 Buscar estudios")
 
-        @st.cache_data(ttl=300)
-        def get_patient_studies(dni_paciente: str) -> List[Dict]:
-            """Obtener todos los estudios de un paciente usando dni_paciente"""
-            try:
-                client = init_supabase()
-                
-                # Primero obtener el id_paciente usando el dni_paciente
-                patient_response = client.table('pacientes').select('dni_paciente').execute()
-                
-                if not patient_response.data:
-                    return []
-                
-                patient_id = patient_response.data[0]['dni_paciente']
-                
-                # Ahora buscar los estudios usando id_paciente
-                response = client.table('estudios_realizados').select('*').eq('dni_paciente', patient_id).execute()
-                studies = response.data
-                
-                if not studies:
-                    return []
-                
-                # Obtener datos relacionados
-                hospitals = {h['id_hospital']: h['nombre_hospital'] for h in get_hospitals()}
-                doctors = {d['id_medico']: d['nombre'] for d in get_doctors()}
-                estudios_data = {e['id_estudio']: e for e in get_estudios()}
-                categories = {c['id_categoria_estudio']: c['tipo_de_estudio'] for c in get_categories()}
-                
-                # Enriquecer los estudios con datos relacionados
-                for study in studies:
-                    # Información del hospital
-                    hospital_id = study.get('id_hospital')
-                    study['hospital'] = {'nombre_hospital': hospitals.get(hospital_id, 'N/A')}
-                    
-                    # Información del médico
-                    medico_id = study.get('id_medico')
-                    study['medicos'] = {'nombre': doctors.get(medico_id, 'N/A')}
-                    
-                    # Información del estudio
-                    estudio_id = study.get('id_estudio')
-                    estudio_info = estudios_data.get(estudio_id, {})
-                    
-                    # Obtener la categoría del estudio
-                    tipo_estudio_id = estudio_info.get('tipo_estudio')
-                    categoria_nombre = categories.get(tipo_estudio_id, 'N/A')
-                    
-                    study['estudios'] = {
-                        'nombre_estudio': estudio_info.get('nombre_estudio', 'N/A'),
-                        'tipo_estudio': {'tipo_de_estudio': categoria_nombre}
-                    }
-                
-                return studies
-                
-            except Exception as e:
-                st.error(f"Error al obtener estudios: {str(e)}")
-                return []
-
-        @st.cache_data(ttl=600)  # Cache por 10 minutos
-        def get_hospitals() -> List[Dict]:
-            """Obtener lista de hospitales"""
-            try:
-                client = init_supabase()
-                response = client.table('hospital').select('id_hospital, nombre_hospital').execute()
-                return response.data
-            except Exception as e:
-                st.error(f"Error al obtener hospitales: {str(e)}")
-                return []
-
-        @st.cache_data(ttl=600)
-        def get_doctors() -> List[Dict]:
-            """Obtener lista de médicos"""
-            try:
-                client = init_supabase()
-                response = client.table('medicos').select('id_medico, nombre').execute()
-                return response.data
-            except Exception as e:
-                st.error(f"Error al obtener médicos: {str(e)}")
-                return []
-
-        @st.cache_data(ttl=600)
-        def get_categories() -> List[Dict]:
-            """Obtener categorías de estudios (tipo_estudio)"""
-            try:
-                client = init_supabase()
-                response = client.table('tipo_estudio').select('id_categoria_estudio, tipo_de_estudio').execute()
-                return response.data
-            except Exception as e:
-                st.error(f"Error al obtener categorías: {str(e)}")
-                return []
-
-        @st.cache_data(ttl=600)
-        def get_estudios() -> List[Dict]:
-            """Obtener lista de estudios específicos"""
-            try:
-                client = init_supabase()
-                response = client.table('estudios').select('*').execute()
-                return response.data
-            except Exception as e:
-                st.error(f"Error al obtener estudios: {str(e)}")
-                return []
-
-        def get_estudios_by_category(categoria_id: int) -> List[Dict]:
-            """Obtener estudios filtrados por categoría"""
-            try:
-                client = init_supabase()
-                response = client.table('estudios').select('*').eq('tipo_estudio', categoria_id).execute()
-                return response.data
-            except Exception as e:
-                st.error(f"Error al obtener estudios por categoría: {str(e)}")
-                return []
-
-        def filter_studies(studies: List[Dict], hospital_filter: str, doctor_filter: str, 
-                          category_filter: str, date_from: date, date_to: date) -> List[Dict]:
-            """Aplicar filtros a los estudios"""
-            filtered_studies = studies.copy()
-            
-            if hospital_filter != "Todos":
-                filtered_studies = [s for s in filtered_studies if s.get('hospital', {}).get('nombre_hospital') == hospital_filter]
-            
-            if doctor_filter != "Todos":
-                filtered_studies = [s for s in filtered_studies if s.get('medicos', {}).get('nombre') == doctor_filter]
-            
-            if category_filter != "Todos":
-                filtered_studies = [
-                    s for s in filtered_studies 
-                    if s.get('estudios', {}).get('tipo_estudio', {}).get('tipo_de_estudio') == category_filter
-                ]
-            
-            # Filtrar por fecha
-            if date_from and date_to:
-                filtered_studies = [
-                    s for s in filtered_studies 
-                    if date_from <= datetime.strptime(s['fecha'], '%Y-%m-%d').date() <= date_to
-                ]
-            
-            return filtered_studies
-
-        def add_new_study(dni_paciente: str, doctor_id: int, hospital_id: int, id_categoria_estudio: int, estudio_id: int, 
-                 study_date: date, observations: str) -> bool:
-            """Agregar nuevo estudio usando dni_paciente directamente"""
-            try:
-                client = init_supabase()
-
-                # ✅ Verificar que el paciente existe CON FILTRO
-                patient_response = client.table('pacientes').select('dni_paciente').eq('dni_paciente', dni_paciente).execute()
-                
-                if not patient_response.data:
-                    st.error("No se encontró el paciente")
-                    return False
-                
-                # ✅ Usar dni_paciente directamente con la columna correcta
-                new_study = {
-                    'dni_paciente': dni_paciente,
-                    'id_medico': doctor_id,
-                    'id_hospital': hospital_id,
-                    'id_categoria_estudio': id_categoria_estudio,  # ✅ Ahora coincide con tu tabla
-                    'id_estudio': estudio_id,
-                    'fecha': study_date.strftime('%Y-%m-%d'),
-                    'observaciones': observations
-                }
-                
-                response = client.table('estudios_realizados').insert(new_study).execute()
-                
-                if response.data:
-                    st.success("Estudio agregado exitosamente")
-                    # Limpiar cache para mostrar el nuevo estudio inmediatamente
-                    st.cache_data.clear()
-                    return True
+            if btn_buscar:
+                if dni_paciente.strip() == "":
+                    st.warning("Por favor ingrese un DNI.")
                 else:
-                    st.error("Error al insertar el estudio")
-                    return False
-                
-            except Exception as e:
-                st.error(f"Error al agregar estudio: {str(e)}")
-                return False
-    
-        # Interfaz principal
-        def main():
-            st.title("🏥 Sistema de Gestión de Estudios Médicos")
-            st.markdown("---")
-            
-            # Sección de búsqueda
-            st.subheader("🔍 Buscar Estudios")
-            
-            col1, col2 = st.columns([3, 1])
-            
-            with col1:
-                search_dni = st.text_input(
-                    "Ingrese DNI del paciente:",
-                    placeholder="Ej: 12345678",
-                    help="Ingrese el número de DNI del paciente para buscar sus estudios"
-                )
-            
-            with col2:
-                st.write("")  # Espaciado
-                search_button = st.button("🔍 Buscar", type="primary", use_container_width=True)
-            
-            # Procesar búsqueda
-            if search_dni and (search_button or 'current_patient' in st.session_state):
-                if search_button or st.session_state.get('current_dni') != search_dni:
-                    patient = get_patient_by_dni(search_dni)
-                    st.session_state['current_patient'] = patient
-                    st.session_state['current_dni'] = search_dni
-                else:
-                    patient = st.session_state.get('current_patient')
-                
-                if patient:
-                    # Mostrar información del paciente
-                    st.success(f"✅ Paciente encontrado: **{patient['nombre']}**")
+                    # Importar la función desde functions.py
+                    from functions import obtener_estudios_por_dni
+                    df_estudios = obtener_estudios_por_dni(dni_paciente.strip())
                     
-                    # Obtener estudios usando dni_paciente
-                    studies = get_patient_studies(patient['dni_paciente'])
-                    
-                    # Botón para agregar nuevo estudio
-                    st.markdown("---")
-                    st.subheader("➕ Agregar Nuevo Estudio")
-                    
-                    with st.expander("Agregar Estudio", expanded=False):
-                        col1, col2 = st.columns(2)
+                    if isinstance(df_estudios, str):
+                        st.info(df_estudios)
+                    else:
+                        # Mostrar información del paciente encontrado
+                        st.success(f"✅ Estudios encontrados para el paciente con DNI: *{dni_paciente}*")
                         
-                        # Obtener datos para los selectores
-                        hospitals = get_hospitals()
-                        doctors = get_doctors()
-                        categories = get_categories()
-                        
-                        with col1:
-                            # Selector de médico
-                            current_doctor = st.selectbox(
-                                "👨‍⚕️ Médico:",
-                                options=[(d['id_medico'], d['nombre']) for d in doctors],
-                                format_func=lambda x: x[1],
-                                help="Seleccione el médico que realizará el estudio"
-                            )
-                            
-                            selected_hospital = st.selectbox(
-                                "🏥 Hospital:",
-                                options=[(h['id_hospital'], h['nombre_hospital']) for h in hospitals],
-                                format_func=lambda x: x[1],
-                                help="Seleccione el hospital donde se realizará el estudio"
-                            )
-                        
-                        with col2:
-                            # Selector de categoría primero
-                            selected_category = st.selectbox(
-                                "📋 Categoría de Estudio:",
-                                options=[(c['id_categoria_estudio'], c['tipo_de_estudio']) for c in categories],
-                                format_func=lambda x: x[1],
-                                help="Seleccione primero la categoría del estudio"
-                            )
-                            
-                            # Obtener estudios de la categoría seleccionada
-                            estudios_filtered = get_estudios_by_category(selected_category[0])
-                            
-                            if estudios_filtered:
-                                selected_estudio = st.selectbox(
-                                    "🔬 Estudio:",
-                                    options=[(e['id_estudio'], e['nombre_estudio']) for e in estudios_filtered],
-                                    format_func=lambda x: x[1],
-                                    help="Seleccione el tipo de estudio específico a realizar"
-                                )
-                            else:
-                                st.warning("No hay estudios disponibles para esta categoría")
-                                selected_estudio = None
-                            
-                            study_date = st.date_input(
-                                "📅 Fecha del Estudio:",
-                                value=date.today(),
-                                help="Seleccione la fecha en que se realizó o realizará el estudio"
-                            )
-                        
-                        observations = st.text_area(
-                            "📝 Observaciones:",
-                            placeholder="Ingrese observaciones sobre el estudio...",
-                            height=100,
-                            help="Agregue cualquier observación relevante sobre el estudio"
-                        )
-                        
-                        if st.button("💾 Guardar Estudio", type="primary"):
-                            if selected_estudio and hospitals and doctors:
-                                # Usar directamente el dni_paciente
-                                success = add_new_study(
-                                    dni_paciente=patient['dni_paciente'],
-                                    doctor_id=current_doctor[0],
-                                    hospital_id=selected_hospital[0],
-                                    id_categoria_estudio=selected_category[0],
-                                    estudio_id=selected_estudio[0],
-                                    study_date=study_date,
-                                    observations=observations
-                                )
-                                
-                                if success:
-                                    st.success("✅ Estudio agregado exitosamente!")
-                                    # Limpiar cache y recargar
-                                    st.cache_data.clear()
-                                    st.rerun()
-                                else:
-                                    st.error("❌ Error al agregar el estudio")
-                            else:
-                                st.error("❌ Por favor complete todos los campos obligatorios")
-                    
-                    if studies:
+                        # Sección de filtros
                         st.markdown("---")
                         st.subheader("📋 Filtros de Búsqueda")
                         
-                        # Filtros
-                        col1, col2, col3, col4 = st.columns(4)
-                        
-                        # Obtener datos para filtros
-                        hospitals = get_hospitals()
-                        doctors = get_doctors()
-                        categories = get_categories()
+                        col1, col2, col3 = st.columns(3)
                         
                         with col1:
-                            hospital_options = ["Todos"] + [h['nombre_hospital'] for h in hospitals]
-                            hospital_filter = st.selectbox("🏥 Hospital:", hospital_options)
+                            # Filtro por hospital
+                            hospitales_unicos = ["Todos"] + sorted(df_estudios['hospital'].unique().tolist())
+                            hospital_filtro = st.selectbox("🏥 Hospital:", hospitales_unicos)
                         
                         with col2:
-                            doctor_options = ["Todos"] + [d['nombre'] for d in doctors]
-                            doctor_filter = st.selectbox("👨‍⚕️ Médico:", doctor_options)
+                            # Filtro por médico
+                            medicos_unicos = ["Todos"] + sorted(df_estudios['medico'].unique().tolist())
+                            medico_filtro = st.selectbox("👨‍⚕ Médico:", medicos_unicos)
                         
                         with col3:
-                            category_options = ["Todos"] + [c['tipo_de_estudio'] for c in categories]
-                            category_filter = st.selectbox("🔬 Tipo de Estudio:", category_options)
-                        
-                        with col4:
-                            date_filter = st.date_input(
-                                "📅 Rango de Fechas:",
-                                value=(date.today().replace(year=date.today().year-1), date.today()),
-                                help="Seleccione el rango de fechas para filtrar"
-                            )
+                            # Filtro por tipo de estudio
+                            categorias_unicas = ["Todos"] + sorted(df_estudios['categoria'].unique().tolist())
+                            categoria_filtro = st.selectbox("🔬 Tipo de Estudio:", categorias_unicas)
                         
                         # Aplicar filtros
-                        if len(date_filter) == 2:
-                            date_from, date_to = date_filter
-                        else:
-                            date_from = date_to = date.today()
+                        df_filtrado = df_estudios.copy()
                         
-                        filtered_studies = filter_studies(
-                            studies, hospital_filter, doctor_filter,
-                            category_filter, date_from, date_to
-                        )
+                        if hospital_filtro != "Todos":
+                            df_filtrado = df_filtrado[df_filtrado['hospital'] == hospital_filtro]
+                        
+                        if medico_filtro != "Todos":
+                            df_filtrado = df_filtrado[df_filtrado['medico'] == medico_filtro]
+                        
+                        if categoria_filtro != "Todos":
+                            df_filtrado = df_filtrado[df_filtrado['categoria'] == categoria_filtro]
                         
                         st.markdown("---")
                         
-                        if filtered_studies:
-                            # Mostrar estudios
-                            st.subheader(f"📊 Estudios Encontrados ({len(filtered_studies)})")
-                            
-                            # Crear cards para cada estudio (más visual que tabla)
-                            for i, study in enumerate(filtered_studies):
-                                with st.container():
-                                    col1, col2, col3, col4 = st.columns([2, 2, 2, 3])
-                                    
-                                    with col1:
-                                        st.write(f"**📅 Fecha:** {study['fecha']}")
-                                        st.write(f"**🏥 Hospital:** {study.get('hospital', {}).get('nombre_hospital', 'N/A')}")
-                                    
-                                    with col2:
-                                        st.write(f"**👨‍⚕️ Médico:** {study.get('medicos', {}).get('nombre', 'N/A')}")
-                                        st.write(f"**🔬 Tipo:** {study.get('estudios', {}).get('tipo_estudio', {}).get('tipo_de_estudio', 'N/A')}")
-                                    
-                                    with col3:
-                                        st.write(f"**📋 Estudio:** {study.get('estudios', {}).get('nombre_estudio', 'N/A')}")
-                                    
-                                    with col4:
-                                        observaciones = study.get('observaciones', 'Sin observaciones')
-                                        if len(observaciones) > 50:
-                                            observaciones = observaciones[:50] + "..."
-                                        st.write(f"**📝 Observaciones:** {observaciones}")
-                                    
-                                    if i < len(filtered_studies) - 1:
-                                        st.divider()
+                        if not df_filtrado.empty:
+                            # Mostrar tabla resumen
+                            st.subheader(f"📊 Estudios Encontrados ({len(df_filtrado)} de {len(df_estudios)})")
+                            st.dataframe(df_filtrado[["fecha", "categoria", "estudio", "hospital"]])
+
+                            st.markdown("### 🗂 Detalles adicionales por estudio")
+                            for idx, row in df_filtrado.iterrows():
+                                with st.expander(f"🗓 {row['fecha']} | {row['estudio']}"):
+                                    st.write(f"🔬 Tipo de estudio: {row['categoria']}")
+                                    st.write(f"📋 Estudio: {row['estudio']}")
+                                    st.write(f"👩‍⚕ Médico: {row['medico']}")
+                                    st.write(f"🏥 Hospital: {row['hospital']}")
+                                    st.write(f"📅 Fecha: {row['fecha']}")
+                                    st.write(f"📝 Observaciones: {row['observaciones'] if row['observaciones'] else 'Sin observaciones'}")
                         else:
                             st.warning("🔍 No se encontraron estudios con los filtros aplicados")
-                            st.info("💡 Intente modificar los filtros o agregar un nuevo estudio")
-                    
-                    else:
-                        st.warning("📋 Este paciente no tiene estudios registrados")
-                        st.info("💡 Puede agregar un nuevo estudio usando el formulario de arriba")
-                
-                else:
-                    st.error("❌ No se encontró ningún paciente con ese DNI")
-                    st.info("💡 Verifique que el DNI esté correctamente ingresado")
+                            st.info("💡 Intente modificar los filtros para ver más resultados")
+
+        elif opcion == "➕ Agregar estudio":
+            st.title("➕ Nuevo estudio médico")
             
-            elif search_dni and not search_button:
-                st.info("💡 Presione 'Buscar' para encontrar al paciente")
+            # Obtener ID del médico logueado
+            dni_medico = st.session_state.dni  # Este valor debería venir del login
+            buscar_id_medico = obtener_id_medico_por_dni(dni_medico)
+            id_medico = buscar_id_medico["id_medico"]
+            
+            # Mostrar información del médico
+            if buscar_id_medico["success"]:
+                st.info(f"👨‍⚕ Médico: {st.session_state.username} (ID: {id_medico})")
+            else:
+                st.error("No se pudo obtener la información del médico logueado")
+                st.stop()
 
-        if __name__ == "__main__":
-            main()
+            with st.form("form_estudio"):
+                # Selector de paciente
+                pacientes = obtener_pacientes()
+                opciones_pacientes = [f"{dni} - {nombre}" for dni, nombre in pacientes]
+                paciente_sel = st.selectbox("👤 Paciente", opciones_pacientes)
 
+                # Selector de hospital
+                hospitales = obtener_hospitales()
+                opciones_hosp = [f"{id_h} - {nombre}" for id_h, nombre in hospitales]
+                hospital_sel = st.selectbox("🏥 Hospital", opciones_hosp)
+
+                # Selector de categoría de estudio
+                categorias = obtener_categorias_estudio()
+                opciones_cat = [f"{id_c} - {nombre}" for id_c, nombre in categorias]
+                categoria_sel = st.selectbox("📚 Tipo de estudio", opciones_cat)
+
+                # Selector de estudio específico (dinámico basado en categoría)
+                if categoria_sel:
+                    id_categoria = int(categoria_sel.split(" - ")[0])
+                    estudios_especificos = obtener_estudios_por_categoria(id_categoria)
+                    
+                    if estudios_especificos:
+                        opciones_estudios = [f"{id_e} - {nombre}" for id_e, nombre in estudios_especificos]
+                        estudio_sel = st.selectbox("🔬 Estudio específico", opciones_estudios)
+                    else:
+                        st.warning("No hay estudios disponibles para esta categoría")
+                        estudio_sel = None
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    fecha_estudio = st.date_input("📅 Fecha del estudio", value=date.today())
+                with col2:
+                    st.write("")  # Espaciado
+
+                observaciones = st.text_area("📝 Observaciones del estudio")
+
+                enviar = st.form_submit_button("💾 Guardar estudio")
+
+                if enviar:
+                    try:
+                        if not estudio_sel:
+                            st.error("❌ Por favor seleccione un estudio específico")
+                        else:
+                            dni_paciente = paciente_sel.split(" - ")[0]
+                            id_hospital = int(hospital_sel.split(" - ")[0])
+                            id_categoria_estudio = int(categoria_sel.split(" - ")[0])
+                            id_estudio = int(estudio_sel.split(" - ")[0])
+
+                            success = insertar_estudio(
+                                dni_paciente, 
+                                id_medico, 
+                                id_hospital, 
+                                id_categoria_estudio, 
+                                id_estudio, 
+                                fecha_estudio, 
+                                observaciones
+                            )
+                            
+                            if success:
+                                st.success("✅ Estudio médico agregado correctamente.")
+                            else:
+                                st.error("❌ Error al guardar el estudio")
+                                
+                    except Exception as e:
+                        st.error(f"❌ Error al guardar el estudio: {e}")
+
+# Sidebar con información del usuario
+if st.session_state.get("logged_in"):
+    with st.sidebar:
+        st.markdown(f'<div class="logo-container">{crear_logo()}</div>', unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown(f"👤 Usuario:** {st.session_state.username}")
+        st.markdown(f"👥 Rol:** {st.session_state.rol}")
+        st.markdown("---")
+        
+        # Mostrar información sobre páginas accesibles
+        if st.session_state.rol == "Médico":
+            st.success("✅ Tienes acceso a: Consultas médicas, Estudios, Medicamentos e Historial clínico")
+            st.error("❌ No tienes acceso a: Administración")
+        elif st.session_state.rol == "Admisiones":
+            st.success("✅ Tienes acceso a: Administración")
+            st.error("❌ No tienes acceso a: Consultas médicas, Estudios, Medicamentos e Historial clínico")
+        
+        st.markdown("---")
+        if st.button("🚪 Cerrar sesión"):
+            # Restablecer estado y bloquear páginas
+            st.session_state.clear()
+            try:
+                manage_page_access()
+            except:
+                pass
+            st.rerun()

@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 import pandas as pd
 from functions import execute_query, add_user, autenticar_usuario, buscar_rol, verificar_medico_por_dni, obtener_dni_por_usuario
-from functions import get_connection
+from functions import get_connection, verificar_si_existe_user_con_dni, verificar_si_existe_user_name
 
 #pip install streamlit plotly pandas
 load_dotenv()
@@ -268,12 +268,12 @@ def crear_logo():
 def manage_page_access():
     # Definir permisos por rol
     role_permissions = {
-        "Medico": ["Consultas_médicas.py", "Estudios.py", "Medicamentos.py"],
+        "Medico": ["Consultas_médicas.py", "Estudios.py", "Medicamentos.py", "Historial_clínico.py"],
         "Admisiones": ["Administración.py"]
     }
     
     # Lista de todas las páginas
-    all_pages = ["Administración.py", "Consultas_médicas.py", "Estudios.py", "Medicamentos.py"]
+    all_pages = ["Administración.py", "Consultas_médicas.py", "Estudios.py", "Medicamentos.py", "Historial_clínico.py"]
     
     # Crear archivo .streamlit/config.toml si no existe
     os.makedirs(".streamlit", exist_ok=True)
@@ -380,31 +380,34 @@ if not st.session_state.logged_in:
             new_user = st.text_input("👤 Nuevo usuario")
             new_pass = st.text_input("🔑 Nueva contraseña", type="password")
             confirm_pass = st.text_input("🔑 Confirmar contraseña", type="password")
-            rol = st.radio("👥 Selecciona tu rol:", ["Medico", "Admisiones"])
+            rol = st.radio("👥 Selecciona tu rol:", ["Médico", "Admisiones"])
             submitted = st.form_submit_button("Registrarse")
             if rol == "Médico":
                 respuesta = verificar_medico_por_dni(id_user)
-                if respuesta:
-                    if submitted:
-                        if not all([id_user, new_user, new_pass, confirm_pass]):
+                if submitted:
+                    if not all([id_user, new_user, new_pass, confirm_pass]):
                             st.error("Completa todos los campos.")
-                        elif " " in new_user:
+                    elif " " in new_user:
                             st.error("El nombre de usuario no puede contener espacios")
-                        elif new_pass != confirm_pass:
+                    elif new_pass != confirm_pass:
                             st.error("Las contraseñas no coinciden.")
-                        elif len(new_pass) < 8 or " " in new_pass:
+                    elif len(new_pass) < 8 or " " in new_pass:
                             st.error("La contraseña debe tener 8 o más caracteres y no debe contener espacios")
+                    elif verificar_si_existe_user_con_dni(id_user):
+                            st.error("Ya existe un usuario con este dni")
+                    elif verificar_si_existe_user_name(new_user):
+                            st.error("Ya existe un usuario con este nombre")
+                    elif respuesta==False:
+                        st.error("No se encuentra registrado en la base de datos")
+                    else:
+                        nueva_cuenta= add_user(id_user, new_user, new_pass, rol)
+                        if nueva_cuenta:
+                            st.success("¡Usuario registrado con éxito! Ahora puedes iniciar sesión.")
+                            st.session_state.auth_mode = "Login"
+                            time.sleep(1)
+                            st.rerun()
                         else:
-                            nueva_cuenta= add_user(id_user, new_user, new_pass, rol)
-                            if nueva_cuenta:
-                                st.success("¡Usuario registrado con éxito! Ahora puedes iniciar sesión.")
-                                st.session_state.auth_mode = "Login"
-                                time.sleep(1)
-                                st.rerun()
-                            else:
-                                st.error("Ocurrió un error, intente nuevamente")
-                else:
-                    st.error("No se encuentra registrado en la base de datos")
+                            st.error("Ocurrió un error, intente nuevamente")
             else:
                 if submitted:
                     if not all([id_user, new_user, new_pass, confirm_pass]):
@@ -434,12 +437,12 @@ if st.session_state.get("logged_in"):
     with st.sidebar:
         st.markdown(f'<div class="logo-container">{crear_logo()}</div>', unsafe_allow_html=True)
         st.markdown("---")
-        st.markdown(f"**👤 Usuario:** {st.session_state.username}")
-        st.markdown(f"**👥 Rol:** {st.session_state.rol}")
+        st.markdown(f"👤 Usuario:** {st.session_state.username}")
+        st.markdown(f"👥 Rol:** {st.session_state.rol}")
         st.markdown("---")
         
         # Mostrar información sobre páginas accesibles
-        if st.session_state.rol == "Medico":
+        if st.session_state.rol == "Médico":
             st.success("✅ Tienes acceso a: Consultas médicas, Estudios y Medicamentos")
             st.error("❌ No tienes acceso a: Administración")
         elif st.session_state.rol == "Admisiones":
@@ -457,7 +460,7 @@ if st.session_state.get("logged_in"):
             st.rerun()
     # Mensaje de bienvenida personalizado
     st.markdown(f'<div class="welcome-text">¡Bienvenido a SyncSalud, {st.session_state.username}! 👋</div>', unsafe_allow_html=True)
-    if st.session_state.rol == "Medico":
+    if st.session_state.rol == "Médico":
         st.markdown("""
         <div style="
             background-color: #e0f7fa;
@@ -474,7 +477,7 @@ if st.session_state.get("logged_in"):
         </div>
         """, unsafe_allow_html=True)
         page_analisis = st.selectbox("📂 Seleccioná una sección para explorar su función", 
-                                 ["", "Consultas médicas", "Estudios", "Medicamentos"])
+                                 ["", "Consultas médicas", "Estudios", "Medicamentos", "Historial clínico"])
         if page_analisis == "Consultas médicas":
             st.markdown("""
         <div class="guide-container">
@@ -483,18 +486,18 @@ if st.session_state.get("logged_in"):
                 <h3>Consultas médicas</h3>
             </div>  
             <p>
-                En esta página podrás <strong>visualizar consultas médicas pasadas</strong> o <strong>agregar una consulta actual</strong> 
-                del paciente utilizando su número de DNI.
+                En esta página podrás <strong>visualizar consultas médicas pasadas</strong> y <strong>agregar la consulta realizada</strong> 
+                al paciente utilizando su número de DNI.
             </p>
             <div>
                 <h4>📊 Información obtenida en cada consulta:</h4>
                 <ul style="font-size:14px;">
                     <li>📅 <strong>Fecha</strong></li>
-                    <li>👨‍⚕️ <strong>Médico</strong></li>
+                    <li>👨‍⚕ <strong>Médico</strong></li>
                     <li>🎯 <strong>Especialidad del profesional</strong></li>
                     <li>🏥 <strong>Hospital</strong></li>
                     <li>📝 <strong>Breve detalle de la consulta</strong></li>
-                    <li>⚠️ <strong>Escala de gravedad:</strong>
+                    <li>⚠ <strong>Escala de gravedad:</strong>
                         <div class="level-5">
                             <strong>🚨 Nivel 5: RESUCITACIÓN</strong><br>
                             Paciente en estado crítico, con riesgo vital inmediato que requiere atención médica inmediata y reanimación.
@@ -535,7 +538,7 @@ if st.session_state.get("logged_in"):
                 <h4>📊 Información obtenida en cada estudios:</h4>
                 <ul style="font-size:14px;">
                     <li>📅 <strong>Fecha</strong></li>
-                    <li>👨‍⚕️ <strong>Médico</strong></li>
+                    <li>👨‍⚕ <strong>Médico</strong></li>
                     <li>🎯 <strong>Especialidad del profesional</strong></li>
                     <li>🏥 <strong>Hospital</strong></li>
                     <li>📋 <strong>Categoria del estudio</strong></li>
@@ -554,17 +557,39 @@ if st.session_state.get("logged_in"):
                 <h3>Medicamentos</h3>
             </div>  
             <p>
-                En esta página podrás <strong>visualizar medicamentos recetados</strong> del paciente o <strong>recetar medicamentos nuevos</strong>
-                utilizando su número de DNI.
+                En esta página podrás <strong>recetar medicamentos</strong> y <strong>isualizar medicamentos recetados</strong>
+                vigentes y pasados del paciente utilizando su número de DNI.
             </p>
             <div>
                 <h4>📊 Información obtenida en cada estudios:</h4>
                 <ul style="font-size:14px;">
-                    <li>👨‍⚕️ <strong>Médico</strong></li>
+                    <li>👨‍⚕ <strong>Médico</strong></li>
                     <li>💊 <strong>Medicamento recetado</strong></li>
                     <li>📋 <strong>Tipo de medicamento</strong></li>
                     <li>📝 <strong>Indicaciones</strong>
                     </li>
+                </ul>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        elif page_analisis == "Historial clínico":
+            st.markdown("""
+        <div class="guide-container">
+            <div class="guide-header">
+                <div class="guide-icon">🏥</div>
+                <h3>Historial clínico</h3>
+            </div>  
+            <p>
+                En esta página podrás <strong>visualizar el historial clínico completo</strong> del paciente 
+                utilizando su número de DNI.
+            </p>
+            <div>
+                <h4>📊 Información obtenida en esta página:</h4>
+                <ul style="font-size:14px;">
+                    <li>👤 <strong>Información general del paciente</strong></li>
+                    <li>🩺 <strong>Consultas medicas realizadas</strong>
+                    <li>💊 <strong>Medicamento recetados</strong></li>
+                    <li>📋 <strong>Estudios realizados</strong></li>
                 </ul>
             </div>
         </div>
@@ -582,7 +607,7 @@ if st.session_state.get("logged_in"):
         ">
             <h4 style="margin-top: 0;">¿Es tu primera vez usando la plataforma?</h4>
             <p style="margin-bottom: 10px;">
-                <strong>No te preocupes</strong> te preparamos una guía rápida sobre la sección disponibles para el personal administrativo. En la  pestaña "Administración" podrás <strong>agregar pacientes</strong> o <strong>agregar médicos</strong> 
+                <strong>No te preocupes</strong> te preparamos una guía rápida sobre la sección disponible para el personal administrativo. En la  pestaña "Administración" podrás <strong>agregar pacientes</strong> o <strong>agregar médicos</strong> 
                 a la base de datos. Elige una opción para aprender más de la funcionalidad de la página.
             </p>
         </div>
@@ -653,7 +678,7 @@ if st.session_state.get("logged_in"):
             <h3>📞 ¿Necesitas ayuda?</h3>
             <p>Nuestro equipo de soporte está siempre disponible para asistirte:</p>
             <p>📧 Email:</strong> soporte@syncsalud.com</p>
-            <p>☎️ Teléfono:</strong> +54 11 1234-5678</p>
+            <p>☎ Teléfono:</strong> +54 11 1234-5678</p>
             <p>💬 WhatsApp:</strong> +54 9 11 5678-9012</p>
             <p>🕐 Horario:</strong> Lunes a Viernes, 8:00 - 20:00</p>
         </div>
@@ -706,7 +731,7 @@ if st.session_state.get("logged_in"):
     
     with col1:
         st.metric(
-            label="⏱️ Aceleración de trabajo",
+            label="⏱ Aceleración de trabajo",
             value="33%",
             delta="15 min menos",
             delta_color="normal"

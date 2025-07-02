@@ -2,6 +2,9 @@ import streamlit as st
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from functions import get_connection
+from Inicio import crear_logo, manage_page_access
+import os
+import datetime
 # Función para conectarse a la base de datos
 
 
@@ -11,7 +14,7 @@ def insertar_paciente(dni, nombre_completo, obra_social, fecha_nacimiento,
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO PACIENTES (id_paciente, nombre, obra_social, fecha_nacimiento,
+        INSERT INTO PACIENTES (dni_paciente, nombre, obra_social, fecha_nacimiento,
         sexo, telefono, contacto_emergencia, grupo_sanguineo)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """, (dni, nombre_completo, obra_social, fecha_nacimiento,
@@ -93,7 +96,11 @@ else:
                 dni = st.text_input("DNI")
                 nombre_completo = st.text_input("Nombre y Apellido")
                 obra_social = st.text_input("Obra Social")
-                fecha_nacimiento = st.date_input("Fecha de nacimiento")
+                fecha_nacimiento = st.date_input(
+                    "Fecha de nacimiento",
+                    min_value=datetime.date(1900, 1, 1),
+                    max_value=datetime.date.today()
+                )
                 sexo = st.selectbox("Sexo", ["M", "F", "Otro"])
                 telefono = st.text_input("Teléfono")
                 contacto_emergencia = st.text_input("Contacto de Emergencia")
@@ -131,7 +138,29 @@ else:
                     st.success("Médico agregado correctamente")
 
 
-
-
-
+if st.session_state.get("logged_in"):
+    # Sidebar con información del usuario
+    with st.sidebar:
+        st.markdown(f'<div class="logo-container">{crear_logo()}</div>', unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown(f"👤 Usuario:** {st.session_state.username}")
+        st.markdown(f"👥 Rol:** {st.session_state.rol}")
+        st.markdown("---")
         
+        # Mostrar información sobre páginas accesibles
+        if st.session_state.rol == "Médico":
+            st.success("✅ Tienes acceso a: Consultas médicas, Estudios, Medicamentos e Historial clínico")
+            st.error("❌ No tienes acceso a: Administración")
+        elif st.session_state.rol == "Admisiones":
+            st.success("✅ Tienes acceso a: Administración")
+            st.error("❌ No tienes acceso a: Consultas médicas, Estudios, Medicamentos e Historial clínico")
+        
+        st.markdown("---")
+        if st.button("🚪 Cerrar sesión"):
+            # Restablecer estado y bloquear páginas
+            st.session_state.clear()
+            try:
+                manage_page_access()
+            except:
+                pass
+            st.rerun()

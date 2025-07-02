@@ -2,63 +2,94 @@
 enabled = false
 
 [pages]
-[pages.Administraci贸n]
+[pages.Administraci髇]
 disabled = true
 
-[pages.Consultasm茅dicas]
+[pages.Consultasm閐icas]
 disabled = true
 
 [pages.Estudios]
 disabled = true
 
 [pages.Medicamentos]
+disabled = true
+
+[pages.Historialcl韓ico]
 disabled = true
 
 [browser.gatherUsageStats]
 enabled = false
 
 [pages]
-[pages.Administraci贸n]
+[pages.Administraci髇]
 disabled = true
 
-[pages.Consultasm茅dicas]
+[pages.Consultasm閐icas]
 disabled = true
 
 [pages.Estudios]
 disabled = true
 
 [pages.Medicamentos]
+disabled = true
+
+[pages.Historialcl韓ico]
 disabled = true
 
 [browser.gatherUsageStats]
 enabled = false
 
 [pages]
-[pages.Administraci贸n]
+[pages.Administraci髇]
 disabled = true
 
-[pages.Consultasm茅dicas]
+[pages.Consultasm閐icas]
 disabled = true
 
 [pages.Estudios]
 disabled = true
 
 [pages.Medicamentos]
+disabled = true
+
+[pages.Historialcl韓ico]
 disabled = true
 
 [browser.gatherUsageStats]
 enabled = false
 
 [pages]
-[pages.Administraci贸n]
+[pages.Administraci髇]
 disabled = true
 
-[pages.Consultasm茅dicas]
+[pages.Consultasm閐icas]
 disabled = true
 
 [pages.Estudios]
 disabled = true
 
 [pages.Medicamentos]
+disabled = true
+
+[pages.Historialcl韓ico]
+disabled = true
+
+[browser.gatherUsageStats]
+enabled = false
+
+[pages]
+[pages.Administraci髇]
+disabled = true
+
+[pages.Consultasm閐icas]
+disabled = true
+
+[pages.Estudios]
+disabled = true
+
+[pages.Medicamentos]
+disabled = true
+
+[pages.Historialcl韓ico]
 disabled = true
 

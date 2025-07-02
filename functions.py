@@ -2,6 +2,8 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 import pandas as pd
+import datetime
+from psycopg2.extras import RealDictCursor
 
 # Load environment variables from .env file
 load_dotenv()
@@ -275,19 +277,69 @@ def verificar_medico_por_dni(dni):
     params = (dni,)
     resultado = execute_query_simple(query, params=params, is_select=True)
 
-    print(resultado)
-
+   
     if resultado.empty:
         return False
     
     count = resultado.iloc[0]['total']
-
-    print(count)
     
     if count > 0:
         return True
     else:
         return False
+    
+def verificar_si_existe_user_con_dni(id):
+    """
+    Verifica si un ya hay un usuario existente con el dni insertado
+
+    Args:
+        dni (str or int): DNI del usuario.
+
+    Returns:
+        dict: {'success': bool, 'message': str}
+    """
+    query = "SELECT COUNT(*) as total FROM users WHERE id = %s"
+    params = (id,)
+    resultado = execute_query_simple(query, params=params, is_select=True)
+
+   
+    if resultado.empty:
+        return False
+    
+    count = resultado.iloc[0]['total']
+    
+    if count > 0:
+        return True
+    else:
+        return False
+    
+
+def verificar_si_existe_user_name(new_user):
+    """
+    Verifica si un ya hay un usuario existente con el mismo nombre
+
+    Args:
+        nombre_usuario (str): Nombre del usuario.
+
+    Returns:
+        dict: {'success': bool, 'message': str}
+    """
+    query = "SELECT COUNT(*) as total FROM users WHERE nombre_usuario = %s"
+    params = (new_user,)
+    resultado = execute_query_simple(query, params=params, is_select=True)
+
+   
+    if resultado.empty:
+        return False
+    
+    count = resultado.iloc[0]['total']
+    
+    if count > 0:
+        return True
+    else:
+        return False
+    
+
 
 def obtener_hospital_por_dni_medico(dni):
     """
@@ -370,3 +422,118 @@ def obtener_categoria_por_id(id_tipo_categoria):
         'nombre_categoria': nombre_categoria
     }
 
+def id_tipo_a_tipo_med(id_tipo_med):
+    """
+    Devuelve el tipo de medicamento a partir del id del tipo de medicamento
+
+    Args:
+        id_tipo_med (str): Id de tipo de medicaamento en tabla "tipo_medicamento".
+
+    Returns:
+        dict: {'success': bool, 'tipo_de_medicamento': str or None, 'message': str}
+    """
+    query = "SELECT tipo_de_medicamento FROM tipo_medicamento WHERE id_tipo_med = %s"
+    params = (id_tipo_med,)
+    resultado = execute_query_simple(query, params=params, is_select=True)
+
+    if resultado.empty:
+        return "No se encontro tipo de medicamento"
+
+    tipo_de_medicamento = resultado.iloc[0]['tipo_de_medicamento']
+    return tipo_de_medicamento
+
+def obtener_historial_legible_por_dni(dni):
+    """
+    Obtiene el historial médico legible de un paciente por su DNI.
+
+    Args:
+        dni (str or int): DNI del paciente.
+
+    Returns:
+        dict: {'success': bool, 'data': list of dict or None, 'message': str}
+    """
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        query = """
+        SELECT 
+            cm.detalle_consulta,
+            cm.clasificacion AS gravedad,
+            cm.fecha_consulta,
+            h.nombre_hospital AS hospital,
+            c.nombre_categoria AS especialidad,
+            m.nombre AS medico
+        FROM consulta_medica cm
+        JOIN pacientes p ON cm.id_paciente = p.dni_paciente
+        JOIN hospital h ON h.id_hospital = cm.id_hospital
+        JOIN categorias c ON c.id_tipo_categoria = cm.id_categoria
+        JOIN medicos m ON m.id_medico = cm.id_medico
+        WHERE p.dni_paciente = %s
+        ORDER BY cm.clasificacion DESC;
+        """
+        cur.execute(query, (dni,))
+        resultados = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        if resultados:
+            return {
+                'success': True,
+                'data': resultados,
+                'message': f'Se encontraron {len(resultados)} registros del historial.'
+            }
+        else:
+            return {
+                'success': False,
+                'data': [],
+                'message': 'No se encontró historial para este paciente.'
+            }
+    except Exception as e:
+        print(f"Error al obtener historial: {e}")
+        return {
+            'success': False,
+            'data': None,
+            'message': 'Error al consultar el historial.'
+        }
+
+def obtener_nombre_por_dni(dni):
+    """
+    Devuelve el DNI (columna 'id') de un usuario a partir de su nombre de usuario.
+
+    Args:
+        nombre_usuario (str): Nombre de usuario registrado en la tabla 'users'.
+
+    Returns:
+        dict: {'success': bool, 'dni': str or None, 'message': str}
+    """
+    query = "SELECT nombre FROM medicos WHERE dni = %s"
+    params = (dni,)
+    resultado = execute_query_simple(query, params=params, is_select=True)
+
+    if resultado.empty:
+        return "No se encontro un medico con este dni"
+
+    nombre = resultado.iloc[0]['nombre']
+    return nombre
+
+def obtener_estudios_por_dni(dni):
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("""
+        SELECT 
+            er.fecha,
+            te.tipo_de_estudio,
+            e.nombre_estudio,
+            er.observaciones
+        FROM estudios_realizados er
+        JOIN estudios e ON er.id_estudio = e.id_estudio
+        JOIN tipo_estudio te ON er.id_categoria_estudio = te.id_categoria_estudio
+        WHERE er.dni_paciente = %s
+        ORDER BY er.fecha DESC
+    """, (dni,))
+    estudios = cur.fetchall()
+    cur.close()
+    conn.close()
+    return estudios
